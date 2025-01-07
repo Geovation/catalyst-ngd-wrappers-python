@@ -1,0 +1,6 @@
+requests
+regex
+logging
+datetime
+python-dotenv
+shapely
