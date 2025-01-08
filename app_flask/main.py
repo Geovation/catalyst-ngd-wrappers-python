@@ -31,13 +31,14 @@ def read_item(collection: str):
     schema = ItemsAuthLimitSchema()
     parsed_params = schema.load(request.args)
     
+    custom_param_names = schema.fields.keys()
+    
     # Separate custom parameters from query parameters
     custom_params = {
         k: parsed_params.pop(k)
-        for k in ['limit', 'request_limit', 'verbose']
+        for k in custom_param_names
         if k in parsed_params
     }
-    
     # Pass remaining parameters as query_params
     result = items_auth_limit(
         collection=collection,
@@ -51,11 +52,13 @@ def read_item2(collection: str):
     # Parse and validate parameters
     schema = ItemsAuthLimitGeomSchema()
     parsed_params = schema.load(request.args)
+
+    custom_param_names = schema.fields.keys()
     
     # Separate custom parameters from query parameters
     custom_params = {
         k: parsed_params.pop(k)
-        for k in ['limit', 'request_limit', 'wkt', 'verbose']
+        for k in custom_param_names
         if k in parsed_params
     }
     
