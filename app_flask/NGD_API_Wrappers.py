@@ -5,7 +5,7 @@ import logging
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from shapely import from_wkt
-from shapely.geometry import Polygon, MultiPolygon
+from shapely.geometry import Point, LineString, Polygon, MultiPolygon
 
 def get_access_token(client_id: str, client_secret: str) -> str:
     '''
@@ -170,6 +170,7 @@ def ngd_items_request(
         query_params_['filter'] = f'({current_filters})and{spatial_filter}' if current_filters else spatial_filter
 
     query_params_string = construct_query_params(**query_params_)
+    print(query_params_string)
     url = f'https://api.os.uk/features/ngd/ofa/v1/collections/{collection}/items/{query_params_string}'
     if verbose:
         print(url)
@@ -183,12 +184,12 @@ def ngd_items_request(
 
     return json_response
 
-def feature_limit_extension(func: callable):
+def limit_extension(func: callable):
 
     def wrapper(
         *args,
         request_limit: int = 50,
-        feature_limit: int = None,
+        limit: int = None,
         query_params: dict = {},
         **kwargs
     ):
@@ -200,14 +201,14 @@ def feature_limit_extension(func: callable):
 
         items = list()
 
-        batch_count, final_batchsize = divmod(feature_limit, 100) if feature_limit else (None, None)
+        batch_count, final_batchsize = divmod(limit, 100) if limit else (None, None)
         request_count = 0
         offset = 0
 
-        if not(feature_limit) and not(request_limit):
-            raise AttributeError('At least one of feature_limit or request_limit must be provided to prevent indefinitely numerous requests and high costs. However, there is no upper limit to these values.')
+        if not(limit) and not(request_limit):
+            raise AttributeError('At least one of limit or request_limit must be provided to prevent indefinitely numerous requests and high costs. However, there is no upper limit to these values.')
 
-        while (request_count != request_limit) and (not(feature_limit) or offset < feature_limit):
+        while (request_count != request_limit) and (not(limit) or offset < limit):
 
             if request_count == batch_count:
                 print('final batch of size', final_batchsize)
@@ -234,16 +235,16 @@ def feature_limit_extension(func: callable):
         }
         return geojson
 
-    wrapper.__name__ = func.__name__ + '+feature_limit_extension'
+    wrapper.__name__ = func.__name__ + '+limit_extension'
     funcname = func.__name__
     wrapper.__doc__ = f"""
     This is an extension the {funcname} function, which returns OS NGD features. It serves to extend the maximum number of features returned above the default maximum 100 by looping through multiple requests.
     It takes the following arguments:
     - collection: The name of the collection to be queried.
     - request_limit: The maximum number of calls to be made to {funcname}. Default is 50.
-    - feature_limit: The maximum number of features to be returned. Default is None.
+    - limit: The maximum number of features to be returned. Default is None.
     - query_params: A dictionary of query parameters to be passed to the function. Default is an empty dictionary.
-    To prevent indefinite requests and high costs, at least one of feature_limit or request_limit must be provided, although there is no limit to the upper value these can be.
+    To prevent indefinite requests and high costs, at least one of limit or request_limit must be provided, although there is no limit to the upper value these can be.
     It will make multiple requests to the function to compile all features from the specified collection, returning a dictionary with the features and metadata.
 
     ____________________________________________________
@@ -256,10 +257,13 @@ def multigeometry_search_extension(func: callable):
 
     def wrapper(*args, wkt: str, **kwargs):
 
-        multi_geom = from_wkt(wkt) if type(wkt) == str else wkt
+        full_geom = from_wkt(wkt) if type(wkt) == str else wkt
         search_areas = list()
 
-        for search_area, geom in enumerate(multi_geom.geoms):
+        is_single_geom = type(full_geom) in [Point, LineString, Polygon]
+        partial_geoms = [full_geom] if is_single_geom else full_geom.geoms
+
+        for search_area, geom in enumerate(partial_geoms):
             json_response = func(*args, wkt=geom, **kwargs)
             json_response['searchAreaNumber'] = search_area
             search_areas.append(json_response)
@@ -361,7 +365,7 @@ def get_single_latest_collection(collection: str, **kwargs) -> str:
 # All possible ways of combining different wrappers in combos with OAuth2
 
 items_auth = OAauth2_manager(ngd_items_request)
-items_auth_limit = feature_limit_extension(items_auth)
+items_auth_limit = limit_extension(items_auth)
 items_auth_limit_geom = multigeometry_search_extension(items_auth_limit)
 items_auth_limit_geom_col = multiple_collections_extension(items_auth_limit_geom)
 
