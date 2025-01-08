@@ -4,3 +4,5 @@ logging
 datetime
 python-dotenv
 shapely
+marshmallow=3.24.1
+flask-marshmallow=1.3.0

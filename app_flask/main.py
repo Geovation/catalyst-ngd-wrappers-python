@@ -6,6 +6,20 @@ from NGD_API_Wrappers import *
 
 app = Flask(__name__)
 
+from marshmallow import Schema, INCLUDE
+from marshmallow.fields import Integer, String, Boolean
+
+class ItemsAuthLimitSchema(Schema):
+    limit = Integer(data_key='limit', required=False)
+    request_limit = Integer(data_key='request-limit', required=False)
+    verbose = Boolean(data_key='verbose', required=False)
+
+    class Meta:
+        unknown = INCLUDE  # Allows additional fields to pass through to query_params
+
+class ItemsAuthLimitGeomSchema(ItemsAuthLimitSchema):
+    wkt = String(required=False)
+
 @app.route("/")
 def hello_world():
     args = request.args
@@ -13,25 +27,44 @@ def hello_world():
 
 @app.route("/catalyst/features/ngd/ofa/v1/collections/<collection>/items/items-auth-limit")
 def read_item(collection: str):
-    params = request.args.to_dict()
-    custom_params = dict()
-    for cp in ['limit','request-limit']:
-        if cp in params:
-            custom_params[cp.replace('-','_')] = int(params.pop(cp))
-    result = items_auth_limit(collection=collection, query_params=params, **custom_params)
+    # Parse and validate parameters
+    schema = ItemsAuthLimitSchema()
+    parsed_params = schema.load(request.args)
+    
+    # Separate custom parameters from query parameters
+    custom_params = {
+        k: parsed_params.pop(k)
+        for k in ['limit', 'request_limit', 'verbose']
+        if k in parsed_params
+    }
+    
+    # Pass remaining parameters as query_params
+    result = items_auth_limit(
+        collection=collection,
+        query_params=parsed_params,
+        **custom_params
+    )
     return result
 
 @app.route("/catalyst/features/ngd/ofa/v1/collections/<collection>/items/items-auth-limit-geom")
 def read_item2(collection: str):
-    params = request.args.to_dict()
-    custom_params = dict()
-    for cp in ['limit','request-limit']:
-        if cp in params:
-            custom_params[cp.replace('-','_')] = int(params.pop(cp))
-    for cp in ['wkt']:
-        if cp in params:
-            custom_params[cp.replace('-','_')] = params.pop(cp)
-    result = items_auth_limit_geom(collection=collection, query_params=params, **custom_params)
+    # Parse and validate parameters
+    schema = ItemsAuthLimitGeomSchema()
+    parsed_params = schema.load(request.args)
+    
+    # Separate custom parameters from query parameters
+    custom_params = {
+        k: parsed_params.pop(k)
+        for k in ['limit', 'request_limit', 'wkt', 'verbose']
+        if k in parsed_params
+    }
+    
+    # Pass remaining parameters as query_params
+    result = items_auth_limit_geom(
+        collection=collection,
+        query_params=parsed_params,
+        **custom_params
+    )
     return result
 
 if __name__ == "__main__":
