@@ -5,7 +5,7 @@ import logging
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from shapely import from_wkt
-from shapely.geometry import Polygon, MultiPolygon
+from shapely.geometry import Point, LineString, Polygon, MultiPolygon
 
 def get_access_token(client_id: str, client_secret: str) -> str:
     '''
@@ -257,10 +257,13 @@ def multigeometry_search_extension(func: callable):
 
     def wrapper(*args, wkt: str, **kwargs):
 
-        multi_geom = from_wkt(wkt) if type(wkt) == str else wkt
+        full_geom = from_wkt(wkt) if type(wkt) == str else wkt
         search_areas = list()
 
-        for search_area, geom in enumerate(multi_geom.geoms):
+        is_single_geom = type(full_geom) in [Point, LineString, Polygon]
+        partial_geoms = [full_geom] if is_single_geom else full_geom.geoms
+
+        for search_area, geom in enumerate(partial_geoms):
             json_response = func(*args, wkt=geom, **kwargs)
             json_response['searchAreaNumber'] = search_area
             search_areas.append(json_response)
