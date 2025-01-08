@@ -32,8 +32,7 @@ def hello_world():
 def create_item_route(schema_class: Schema, handler_function, route_suffix: str):
     """Factory function to create route handlers for item endpoints"""
     route = f"/catalyst/features/ngd/ofa/v1/collections/<collection>/items/{route_suffix}"
-    
-    @app.route(route)
+
     def handler(collection: str):
         schema = schema_class()
         parsed_params = schema.load(request.args)
@@ -52,6 +51,13 @@ def create_item_route(schema_class: Schema, handler_function, route_suffix: str)
     
     # Set a unique name for the view function
     handler.__name__ = f"handle_{route_suffix.replace('-', '_')}"
+
+    app.add_url_rule(
+        route,
+        view_func=handler,
+        methods=['GET']
+    )
+
     return handler
 
 items_auth_handler = create_item_route(
