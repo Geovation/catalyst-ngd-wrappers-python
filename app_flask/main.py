@@ -54,8 +54,9 @@ def create_item_route(schema_class: Schema, handler_function, route_suffix: str,
 
     def handler(collection: str | list = None):
         schema = schema_class()
-        args = request.args.to_dict(flat=False)
-        delistify(args)
+        args = request.args.to_dict(flat=not(multi_collections))
+        if multi_collections:
+            delistify(args)
         parsed_params = schema.load(args)
         
         custom_params = {
