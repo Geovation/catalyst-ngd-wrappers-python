@@ -1,5 +1,5 @@
 # Local Deployment
-1. Create a .env file with github account details:
+1. Create a .env file with OS DataHub account details:
     - CLIENT_ID =
     - CLIENT_SECRET =
 2. Create .venv with _python -m venv .venv_ and activate with _source .venv/bin/activate_
