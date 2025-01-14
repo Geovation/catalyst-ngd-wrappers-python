@@ -12,10 +12,10 @@
 
 ```mermaid
 graph TD
-    A[OAuth2_manager<br><font size=2>Authentication Service</font>]
-    --> B[feature_limit_extension<br><font size=2>Handles API Limits</font>]
-    A --> C[multigeometry_search_extension<br><font size=2>Spatial Search Service</font>]
-    A --> D[multiple_collections_extension<br><font size=2>Collection Manager</font>]
+    A[OAuth2_manager<br><font size=1>auth</font>]
+    --> B[feature_limit_extension<br><font size=1>limit</font>]
+    A --> C[multigeometry_search_extension<br><font size=1>geom</font>]
+    A --> D[multiple_collections_extension<br><font size=1>col</font>]
     B --> C
     B --> D
     C --> D
