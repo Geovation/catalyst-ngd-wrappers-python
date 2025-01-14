@@ -12,7 +12,7 @@
 
 - _Subtitles specifying the naming convention and ordering for python function names, and the corresponding final component of API paths_
 
-- _Eg. the api url which combines OAuth2, the feature limit exentension, and the multiple collections extension will finish .../items/auth-limit-col?...
+- _Eg. the api url which combines OAuth2, the feature limit exentension, and the multiple collections extension will finish .../items/auth-limit-col?..._
 
 ```mermaid
 graph TD
