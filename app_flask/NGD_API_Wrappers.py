@@ -170,7 +170,6 @@ def ngd_items_request(
         query_params_['filter'] = f'({current_filters})and{spatial_filter}' if current_filters else spatial_filter
 
     query_params_string = construct_query_params(**query_params_)
-    print(query_params_string)
     url = f'https://api.os.uk/features/ngd/ofa/v1/collections/{collection}/items/{query_params_string}'
     if verbose:
         print(url)
@@ -293,10 +292,10 @@ def multigeometry_search_extension(func: callable):
 
 def multiple_collections_extension(func: callable) -> dict:
 
-    def wrapper(collections: list[str], *args, **kwargs):
+    def wrapper(collection: list[str], *args, **kwargs):
 
         results = dict()
-        for c in collections:
+        for c in collection:
             json_response = func(c, *args, **kwargs)
             results[c] = json_response
         return results
