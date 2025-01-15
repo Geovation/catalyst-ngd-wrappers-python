@@ -181,9 +181,9 @@ def ngd_items_request(
         raise Exception(json_response)
     
     if add_metadata:
-        response['collection'] = collection
-        response['source'] = "Compiled from code by Geovation from Ordnance Survey"
-        response['numberOfRequests'] = 1
+        json_response['collection'] = collection
+        json_response['source'] = "Compiled from code by Geovation from Ordnance Survey"
+        json_response['numberOfRequests'] = 1
 
     return json_response
 
@@ -267,7 +267,7 @@ def multigeometry_search_extension(func: callable):
         partial_geoms = [full_geom] if is_single_geom else full_geom.geoms
 
         for search_area, geom in enumerate(partial_geoms):
-            json_response = func(*args, wkt=geom, add_metadata=False, **kwargs)
+            json_response = func(*args, wkt=geom, **kwargs)
             json_response['searchAreaNumber'] = search_area
             search_areas.append(json_response)
 
@@ -288,16 +288,17 @@ def multigeometry_search_extension(func: callable):
 
         for area in search_areas:
 
-            collection = area['collection']
-            searchAreaNumber = area['searchAreaNumber']
+            collection = area.pop('collection')
+            searchAreaNumber = area.pop('searchAreaNumber')
+            area.pop('timeStamp')
 
             features = area['features']
             for feature in features:
                 feature['collection'] = collection
                 feature['searchAreaNumber'] = searchAreaNumber
             geojson['features'] += features
-            geojson['numberOfRequests'] += area['numberOfRequests']
-            geojson['numberReturned'] += area['numberReturned']
+            geojson['numberOfRequests'] += area.pop('numberOfRequests')
+            geojson['numberReturned'] += area.pop('numberReturned')
         
         geojson['timeStamp'] = datetime.now().isoformat()
 
