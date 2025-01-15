@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from shapely import from_wkt
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon
+from collections import defaultdict
 
 def get_access_token(client_id: str, client_secret: str) -> str:
     '''
@@ -254,7 +255,7 @@ def limit_extension(func: callable):
 
 def multigeometry_search_extension(func: callable):
 
-    def wrapper(*args, wkt: str, **kwargs):
+    def wrapper(*args, wkt: str, format_geojson: bool = False, **kwargs):
 
         full_geom = from_wkt(wkt) if type(wkt) == str else wkt
         search_areas = list()
@@ -267,10 +268,35 @@ def multigeometry_search_extension(func: callable):
             json_response['searchAreaNumber'] = search_area
             search_areas.append(json_response)
 
+        if not(format_geojson):
+            response = {
+                "type": "FeatureCollection",
+                "searchAreas": search_areas
+            }
+            return response
+
         geojson = {
-            "type": "FeatureCollection",
-            "searchAreas": search_areas
+            'type': 'FeatureCollection',
+            'source': 'Compiled from code by Geovation from Ordnance Survey',
+            'numberOfRequests': 0,
+            'totalNumberReturned': 0,
+            'features': []
         }
+
+        for area in search_areas:
+
+            collection = area['collection']
+            searchAreaNumber = area['searchAreaNumber']
+
+            features = area['features']
+            for feature in features:
+                feature['collection'] = collection
+                feature['searchAreaNumber'] = searchAreaNumber
+            geojson['features'].append(features)
+            geojson['numberOfRequests'] += area['numberOfRequets']
+            geojson['totalNumberReturned'] += area['totalNumberReturned']
+        
+        geojson['timeStamp'] = datetime.now().isoformat()
 
         return geojson
 
