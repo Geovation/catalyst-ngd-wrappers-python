@@ -133,7 +133,6 @@ def ngd_items_request(
     wkt = None,
     headers: dict = {},
     access_token: str = None,
-    verbose: bool = False,
     **kwargs
 ) -> dict:
     """
@@ -172,8 +171,6 @@ def ngd_items_request(
 
     query_params_string = construct_query_params(**query_params_)
     url = f'https://api.os.uk/features/ngd/ofa/v1/collections/{collection}/items/{query_params_string}'
-    if verbose:
-        print(url)
     if access_token:
         headers_['Authorization'] = f"Bearer {access_token}"
     response = r.get(url, headers=headers_, **kwargs)
