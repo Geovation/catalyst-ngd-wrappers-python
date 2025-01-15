@@ -181,6 +181,10 @@ def ngd_items_request(
 
     if response.status_code >= 400:
         raise Exception(json_response)
+    
+    response['collection'] = collection
+    response['source'] = "Compiled from code by Geovation from Ordnance Survey"
+    response['numberOfRequests'] = 1
 
     return json_response
 
