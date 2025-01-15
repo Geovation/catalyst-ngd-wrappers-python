@@ -227,7 +227,7 @@ def limit_extension(func: callable):
         geojson = {
             "type": "FeatureCollection",
             "numberOfRequests": request_count,
-            "totalNumberReturned": len(items),
+            "numberReturned": len(items),
             "timeStamp": datetime.now().isoformat(),
             "collection": kwargs.get('collection'),
             "source": "Compiled from code by Geovation from Ordnance Survey",
@@ -279,7 +279,7 @@ def multigeometry_search_extension(func: callable):
             'type': 'FeatureCollection',
             'source': 'Compiled from code by Geovation from Ordnance Survey',
             'numberOfRequests': 0,
-            'totalNumberReturned': 0,
+            'numberReturned': 0,
             'features': []
         }
 
@@ -294,7 +294,7 @@ def multigeometry_search_extension(func: callable):
                 feature['searchAreaNumber'] = searchAreaNumber
             geojson['features'] += features
             geojson['numberOfRequests'] += area['numberOfRequests']
-            geojson['totalNumberReturned'] += area['totalNumberReturned']
+            geojson['numberReturned'] += area['numberReturned']
         
         geojson['timeStamp'] = datetime.now().isoformat()
 
