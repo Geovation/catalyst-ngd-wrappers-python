@@ -20,6 +20,7 @@ class LimitSchema(BaseSchema):
 
 class GeomSchema(BaseSchema):
     wkt = String(required=False, data_key='wkt')
+    format_geojson = Boolean(required=False, data_key='format-geojson')
 
 class ColSchema(BaseSchema):
     collection = List(String(), required=True, data_key='collection')
