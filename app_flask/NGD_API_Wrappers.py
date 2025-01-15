@@ -292,8 +292,8 @@ def multigeometry_search_extension(func: callable):
             for feature in features:
                 feature['collection'] = collection
                 feature['searchAreaNumber'] = searchAreaNumber
-            geojson['features'].append(features)
-            geojson['numberOfRequests'] += area['numberOfRequets']
+            geojson['features'] += features
+            geojson['numberOfRequests'] += area['numberOfRequests']
             geojson['totalNumberReturned'] += area['totalNumberReturned']
         
         geojson['timeStamp'] = datetime.now().isoformat()
