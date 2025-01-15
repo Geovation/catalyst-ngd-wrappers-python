@@ -179,9 +179,11 @@ def ngd_items_request(
 
     if response.status_code >= 400:
         raise Exception(json_response)
-    
+
+    for feature in json_response['features']:
+        feature['collection'] = collection
+
     if add_metadata:
-        json_response['collection'] = collection
         json_response['source'] = "Compiled from code by Geovation from Ordnance Survey"
         json_response['numberOfRequests'] = 1
 
@@ -288,13 +290,11 @@ def multigeometry_search_extension(func: callable):
 
         for area in search_areas:
 
-            collection = area.pop('collection')
             searchAreaNumber = area.pop('searchAreaNumber')
             area.pop('timeStamp')
 
             features = area['features']
             for feature in features:
-                feature['collection'] = collection
                 feature['searchAreaNumber'] = searchAreaNumber
             geojson['features'] += features
             geojson['numberOfRequests'] += area.pop('numberOfRequests')
@@ -322,13 +322,35 @@ def multigeometry_search_extension(func: callable):
 
 def multiple_collections_extension(func: callable) -> dict:
 
-    def wrapper(collection: list[str], *args, **kwargs):
+    def wrapper(collection: list[str], format_geojson: bool = False, *args, **kwargs):
 
         results = dict()
         for c in collection:
-            json_response = func(c, *args, **kwargs)
+            json_response = func(c, format_geojson=format_geojson, *args, **kwargs)
             results[c] = json_response
-        return results
+        
+        if not(format_geojson):
+            return results
+    
+        geojson = {
+            'type': 'FeatureCollection',
+            'source': 'Compiled from code by Geovation from Ordnance Survey',
+            'numberOfRequests': 0,
+            'numberReturned': 0,
+            'features': []
+        }
+
+        for collection_results in results.values():
+
+            collection_results.pop('timeStamp')
+            features = collection_results['features']
+            geojson['features'] += features
+            geojson['numberOfRequests'] += collection_results.pop('numberOfRequests')
+            geojson['numberReturned'] += collection_results.pop('numberReturned')
+        
+        geojson['timeStamp'] = datetime.now().isoformat()
+
+        return geojson
     
     wrapper.__name__ = func.__name__ + '+multiple_collections_extension'
     funcname = func.__name__
