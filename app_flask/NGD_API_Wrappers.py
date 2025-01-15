@@ -133,6 +133,7 @@ def ngd_items_request(
     wkt = None,
     headers: dict = {},
     access_token: str = None,
+    add_metadata: bool = True,
     **kwargs
 ) -> dict:
     """
@@ -179,9 +180,10 @@ def ngd_items_request(
     if response.status_code >= 400:
         raise Exception(json_response)
     
-    response['collection'] = collection
-    response['source'] = "Compiled from code by Geovation from Ordnance Survey"
-    response['numberOfRequests'] = 1
+    if add_metadata:
+        response['collection'] = collection
+        response['source'] = "Compiled from code by Geovation from Ordnance Survey"
+        response['numberOfRequests'] = 1
 
     return json_response
 
@@ -216,7 +218,7 @@ def limit_extension(func: callable):
                 query_params_['limit'] = final_batchsize
             query_params_['offset'] = offset
 
-            json_response = func(*args, query_params=query_params_, **kwargs)
+            json_response = func(*args, query_params=query_params_, add_metadata = False, **kwargs)
             request_count += 1
             items += json_response['features']
 
@@ -265,7 +267,7 @@ def multigeometry_search_extension(func: callable):
         partial_geoms = [full_geom] if is_single_geom else full_geom.geoms
 
         for search_area, geom in enumerate(partial_geoms):
-            json_response = func(*args, wkt=geom, **kwargs)
+            json_response = func(*args, wkt=geom, add_metadata=False, **kwargs)
             json_response['searchAreaNumber'] = search_area
             search_areas.append(json_response)
 
