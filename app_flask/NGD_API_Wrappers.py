@@ -336,17 +336,23 @@ def multiple_collections_extension(func: callable) -> dict:
             'type': 'FeatureCollection',
             'source': 'Compiled from code by Geovation from Ordnance Survey',
             'numberOfRequests': 0,
+            'numberOfRequestsByCollection': {},
             'numberReturned': 0,
+            'numberReturnedByCollection': {},
             'features': []
         }
 
-        for collection_results in results.values():
+        for collection, collection_results in results.items():
 
             collection_results.pop('timeStamp')
             features = collection_results['features']
             geojson['features'] += features
-            geojson['numberOfRequests'] += collection_results.pop('numberOfRequests')
-            geojson['numberReturned'] += collection_results.pop('numberReturned')
+            numberOfRequests = collection_results.pop('numberOfRequests')
+            geojson['numberOfRequests'] += numberOfRequests
+            geojson['numberOfRequestsByCollection'][collection] = numberOfRequests
+            numberReturned = collection_results.pop('numberReturned')
+            geojson['numberReturned'] += numberReturned
+            geojson['numberReturnedByCollection'][collection] = numberReturned
         
         geojson['timeStamp'] = datetime.now().isoformat()
 
