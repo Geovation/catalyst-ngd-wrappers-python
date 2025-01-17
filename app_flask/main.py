@@ -16,10 +16,10 @@ class BaseSchema(Schema):
 class LimitSchema(BaseSchema):
     limit = Integer(data_key='limit', required=False)
     request_limit = Integer(data_key='request-limit', required=False)
-    verbose = Boolean(data_key='verbose', required=False)
 
 class GeomSchema(BaseSchema):
     wkt = String(required=False, data_key='wkt')
+    format_geojson = Boolean(required=False, data_key='format-geojson')
 
 class ColSchema(BaseSchema):
     collection = List(String(), required=True, data_key='collection')

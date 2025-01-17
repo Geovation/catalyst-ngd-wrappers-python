@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from shapely import from_wkt
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon
+from collections import defaultdict
 
 def get_access_token(client_id: str, client_secret: str) -> str:
     '''
@@ -132,7 +133,7 @@ def ngd_items_request(
     wkt = None,
     headers: dict = {},
     access_token: str = None,
-    verbose: bool = False,
+    add_metadata: bool = True,
     **kwargs
 ) -> dict:
     """
@@ -171,8 +172,6 @@ def ngd_items_request(
 
     query_params_string = construct_query_params(**query_params_)
     url = f'https://api.os.uk/features/ngd/ofa/v1/collections/{collection}/items/{query_params_string}'
-    if verbose:
-        print(url)
     if access_token:
         headers_['Authorization'] = f"Bearer {access_token}"
     response = r.get(url, headers=headers_, **kwargs)
@@ -180,6 +179,13 @@ def ngd_items_request(
 
     if response.status_code >= 400:
         raise Exception(json_response)
+
+    for feature in json_response['features']:
+        feature['collection'] = collection
+
+    if add_metadata:
+        json_response['source'] = "Compiled from code by Geovation from Ordnance Survey"
+        json_response['numberOfRequests'] = 1
 
     return json_response
 
@@ -214,7 +220,7 @@ def limit_extension(func: callable):
                 query_params_['limit'] = final_batchsize
             query_params_['offset'] = offset
 
-            json_response = func(*args, query_params=query_params_, **kwargs)
+            json_response = func(*args, query_params=query_params_, add_metadata = False, **kwargs)
             request_count += 1
             items += json_response['features']
 
@@ -226,7 +232,7 @@ def limit_extension(func: callable):
         geojson = {
             "type": "FeatureCollection",
             "numberOfRequests": request_count,
-            "totalNumberReturned": len(items),
+            "numberReturned": len(items),
             "timeStamp": datetime.now().isoformat(),
             "collection": kwargs.get('collection'),
             "source": "Compiled from code by Geovation from Ordnance Survey",
@@ -254,7 +260,7 @@ def limit_extension(func: callable):
 
 def multigeometry_search_extension(func: callable):
 
-    def wrapper(*args, wkt: str, **kwargs):
+    def wrapper(*args, wkt: str, format_geojson: bool = False, **kwargs):
 
         full_geom = from_wkt(wkt) if type(wkt) == str else wkt
         search_areas = list()
@@ -267,10 +273,34 @@ def multigeometry_search_extension(func: callable):
             json_response['searchAreaNumber'] = search_area
             search_areas.append(json_response)
 
+        if not(format_geojson):
+            response = {
+                "type": "FeatureCollection",
+                "searchAreas": search_areas
+            }
+            return response
+
         geojson = {
-            "type": "FeatureCollection",
-            "searchAreas": search_areas
+            'type': 'FeatureCollection',
+            'source': 'Compiled from code by Geovation from Ordnance Survey',
+            'numberOfRequests': 0,
+            'numberReturned': 0,
+            'features': []
         }
+
+        for area in search_areas:
+
+            searchAreaNumber = area.pop('searchAreaNumber')
+            area.pop('timeStamp')
+
+            features = area['features']
+            for feature in features:
+                feature['searchAreaNumber'] = searchAreaNumber
+            geojson['features'] += features
+            geojson['numberOfRequests'] += area.pop('numberOfRequests')
+            geojson['numberReturned'] += area.pop('numberReturned')
+        
+        geojson['timeStamp'] = datetime.now().isoformat()
 
         return geojson
 
@@ -292,13 +322,41 @@ def multigeometry_search_extension(func: callable):
 
 def multiple_collections_extension(func: callable) -> dict:
 
-    def wrapper(collection: list[str], *args, **kwargs):
+    def wrapper(collection: list[str], format_geojson: bool = False, *args, **kwargs):
 
         results = dict()
         for c in collection:
-            json_response = func(c, *args, **kwargs)
+            json_response = func(c, format_geojson=format_geojson, *args, **kwargs)
             results[c] = json_response
-        return results
+        
+        if not(format_geojson):
+            return results
+    
+        geojson = {
+            'type': 'FeatureCollection',
+            'source': 'Compiled from code by Geovation from Ordnance Survey',
+            'numberOfRequests': 0,
+            'numberOfRequestsByCollection': {},
+            'numberReturned': 0,
+            'numberReturnedByCollection': {},
+            'features': []
+        }
+
+        for collection, collection_results in results.items():
+
+            collection_results.pop('timeStamp')
+            features = collection_results['features']
+            geojson['features'] += features
+            numberOfRequests = collection_results.pop('numberOfRequests')
+            geojson['numberOfRequests'] += numberOfRequests
+            geojson['numberOfRequestsByCollection'][collection] = numberOfRequests
+            numberReturned = collection_results.pop('numberReturned')
+            geojson['numberReturned'] += numberReturned
+            geojson['numberReturnedByCollection'][collection] = numberReturned
+        
+        geojson['timeStamp'] = datetime.now().isoformat()
+
+        return geojson
     
     wrapper.__name__ = func.__name__ + '+multiple_collections_extension'
     funcname = func.__name__
