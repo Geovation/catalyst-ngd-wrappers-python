@@ -18,7 +18,7 @@ class LimitSchema(BaseSchema):
     request_limit = Integer(data_key='request-limit', required=False)
 
 class GeomSchema(BaseSchema):
-    wkt = String(required=False, data_key='wkt')
+    filter_wkt = String(required=False, data_key='filter-wkt')
     format_geojson = Boolean(required=False, data_key='format-geojson')
 
 class ColSchema(BaseSchema):

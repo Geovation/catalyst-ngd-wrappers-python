@@ -130,7 +130,7 @@ def ngd_items_request(
     collection: str,
     query_params: dict = {},
     filter_params: dict = {},
-    wkt = None,
+    filter_wkt = None,
     headers: dict = {},
     access_token: str = None,
     add_metadata: bool = True,
@@ -146,7 +146,7 @@ def ngd_items_request(
         filter_params (dict, optional) - OS NGD attribute filters to pass to the query within the 'filter' query_param. The can be used instead of or in addition to manually setting the filter in query_params.
             The key-value pairs will appended using the EQUAL TO [ = ] comparator. Any other CQL Operator comparisons must be set manually in query_params.
             Queryable attributes can be found in OS NGD codelists documentation https://docs.os.uk/osngd/code-lists/code-lists-overview, or by inserting the relevant collectionId into the https://api.os.uk/features/ngd/ofa/v1/collections/{{collectionId}}/queryables endpoint.
-        wkt (string or shapely geometry object) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a string or as a Shapely geometry object.
+        filter_wkt (string or shapely geometry object) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a string or as a Shapely geometry object.
             The function automatically composes the full INTERSECTS filter and adds it to the 'filter' query parameter.
             Make sure that 'filter-crs' is set to the appropriate value.
         headers (dict, optional) - Headers to pass to the query. These can include bearer-token authentication.
@@ -165,8 +165,8 @@ def ngd_items_request(
         current_filters = query_params_.get('filter')
         query_params_['filter'] = f'({current_filters})and{filters}' if current_filters else filters
 
-    if wkt:
-        spatial_filter = wkt_to_spatial_filter(wkt)
+    if filter_wkt:
+        spatial_filter = wkt_to_spatial_filter(filter_wkt)
         current_filters = query_params_.get('filter')
         query_params_['filter'] = f'({current_filters})and{spatial_filter}' if current_filters else spatial_filter
 
@@ -260,22 +260,21 @@ def limit_extension(func: callable):
 
 def multigeometry_search_extension(func: callable):
 
-    def wrapper(*args, wkt: str, format_geojson: bool = False, **kwargs):
+    def wrapper(*args, filter_wkt: str, heirarchical_output: bool = False, **kwargs):
 
-        full_geom = from_wkt(wkt) if type(wkt) == str else wkt
+        full_geom = from_wkt(filter_wkt) if type(filter_wkt) == str else filter_wkt
         search_areas = list()
 
         is_single_geom = type(full_geom) in [Point, LineString, Polygon]
         partial_geoms = [full_geom] if is_single_geom else full_geom.geoms
 
         for search_area, geom in enumerate(partial_geoms):
-            json_response = func(*args, wkt=geom, **kwargs)
+            json_response = func(*args, filter_wkt=geom, **kwargs)
             json_response['searchAreaNumber'] = search_area
             search_areas.append(json_response)
 
-        if not(format_geojson):
+        if heirarchical_output:
             response = {
-                "type": "FeatureCollection",
                 "searchAreas": search_areas
             }
             return response
@@ -288,17 +287,33 @@ def multigeometry_search_extension(func: callable):
             'features': []
         }
 
+        ids = list()
+        geojson_fts = geojson['features']
         for area in search_areas:
 
             searchAreaNumber = area.pop('searchAreaNumber')
-            area.pop('timeStamp')
 
             features = area['features']
             for feature in features:
                 feature['searchAreaNumber'] = searchAreaNumber
-            geojson['features'] += features
-            geojson['numberOfRequests'] += area.pop('numberOfRequests')
-            geojson['numberReturned'] += area.pop('numberReturned')
+
+            new_features = list()
+            for f in features:
+                if f['id'] in ids:
+                    print(f['id'])
+                    index = [v for v, gf in enumerate(geojson_fts) if gf['id'] == f['id']][0]
+                    n = geojson_fts[index]['searchAreaNumber']
+                    n = [n] if type(n) != list else n
+                    n.append(searchAreaNumber)
+                    geojson_fts[index]['searchAreaNumber'] = n
+                else:
+                    f['searchAreaNumber'] = searchAreaNumber
+                    new_features.append(f)
+                    ids.append(f['id'])
+
+            geojson_fts += new_features
+            geojson['numberOfRequests'] += area['numberOfRequests']
+            geojson['numberReturned'] += len(new_features)
         
         geojson['timeStamp'] = datetime.now().isoformat()
 
@@ -322,14 +337,14 @@ def multigeometry_search_extension(func: callable):
 
 def multiple_collections_extension(func: callable) -> dict:
 
-    def wrapper(collection: list[str], format_geojson: bool = False, *args, **kwargs):
+    def wrapper(collection: list[str], heirarchical_output: bool = False, *args, **kwargs):
 
         results = dict()
         for c in collection:
-            json_response = func(c, format_geojson=format_geojson, *args, **kwargs)
+            json_response = func(c, heirarchical_output=heirarchical_output, *args, **kwargs)
             results[c] = json_response
         
-        if not(format_geojson):
+        if heirarchical_output:
             return results
     
         geojson = {
