@@ -1,7 +1,5 @@
 # Local Deployment
-1. Create a .env file with OS DataHub account details:
-    - CLIENT_ID =
-    - CLIENT_SECRET = 
+1. Create a .env file with OS DataHub account details, as specified in .env.sample
 3. Create .venv with _python -m venv .venv_ and activate with _source .venv/bin/activate_
 2. Install requirements with _pip install -r requirements.txt_
 3. Launch flask application with _flask --app app\_flask/main run_
