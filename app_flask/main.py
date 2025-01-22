@@ -9,6 +9,10 @@ app = Flask(__name__)
 from marshmallow import Schema, INCLUDE
 from marshmallow.fields import Integer, String, Boolean, List
 
+class LatestCollectionsSchema(Schema):
+    flag_recent_updates = Boolean(required=False, data_key='flag-recent-updates')
+    recent_update_days = Integer(required=False, data_key='recent_update_days')
+
 class BaseSchema(Schema):
     filter_wkt = String(required=False, data_key='filter-wkt')
     use_latest_collection = Boolean(required=False, data_key='use-latest-collection')
@@ -42,6 +46,20 @@ class LimitGeomColSchema(LimitSchema, GeomSchema, ColSchema):
 def hello_world():
     args = request.args
     return args
+
+@app.route("/catalyst/features/ngd/ofa/v1/latest-collections")
+def latest_collections():
+    schema = LatestCollectionsSchema()
+    args = request.args.to_dict()
+    parsed_params = schema.load(args)
+    return get_latest_collection_versions(**parsed_params)
+
+@app.route("/catalyst/features/ngd/ofa/v1/latest-collections/<collection>")
+def latest_collections(collection: str = None):
+    schema = LatestCollectionsSchema()
+    args = request.args.to_dict()
+    parsed_params = schema.load(args)
+    return get_single_latest_collection(collection, **parsed_params)
 
 def delistify(params: dict):
     for k, v in params.items():
