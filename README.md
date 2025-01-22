@@ -25,3 +25,10 @@ graph TD
 ```
 
 # API Documentation
+
+- All the Catalyst APIs extend the core functionality of GET request for items using the OS NGD API - Features
+    - The endpoint for this API is https://api.os.uk/features/ngd/ofa/v1/collections/{collectionId}/items
+    - Documentation for the API can be found on the [OS Data Hub](https://osdatahub.os.uk/docs/ofa/overview) and on the [Gitbook docs for the National Geographic Database (NGD)](https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features)
+
+- http://127.0.0.1:5000/catalyst/features/ngd/ofa/v1/collections/{collectionId}/items/auth
+    - Description
