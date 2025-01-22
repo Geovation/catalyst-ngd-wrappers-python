@@ -11,6 +11,7 @@ from marshmallow.fields import Integer, String, Boolean, List
 
 class BaseSchema(Schema):
     filter_wkt = String(required=False, data_key='filter-wkt')
+    use_latest_collection = Boolean(required=False, data_key='use-latest-collection')
 
     class Meta:
         unknown = INCLUDE  # Allows additional fields to pass through to query_params
