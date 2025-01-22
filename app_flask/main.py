@@ -55,7 +55,7 @@ def latest_collections():
     return get_latest_collection_versions(**parsed_params)
 
 @app.route("/catalyst/features/ngd/ofa/v1/latest-collections/<collection>")
-def latest_collections(collection: str = None):
+def latest_single_collection(collection: str = None):
     schema = LatestCollectionsSchema()
     args = request.args.to_dict()
     parsed_params = schema.load(args)

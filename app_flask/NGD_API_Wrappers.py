@@ -52,7 +52,10 @@ def get_single_latest_collection(collection: str, **kwargs) -> str:
     More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
     '''
     latest_collections = get_latest_collection_versions(**kwargs)
-    latest_collection = latest_collections[0][collection]
+    try:
+        latest_collection = latest_collections[0][collection]
+    except KeyError:
+        raise KeyError(f"Collection '{collection}' not found in the latest collections. Please check the collection name and ensure it follows the format: theme-collection-featuretype")
     return latest_collection
 
 def get_access_token(client_id: str, client_secret: str) -> str:
