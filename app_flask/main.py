@@ -38,7 +38,7 @@ class GeomColSchema(GeomSchema, ColSchema):
 class LimitGeomColSchema(LimitSchema, GeomSchema, ColSchema):
     """Combining Limit, Geom, and Col schemas"""
 
-@app.route("/", methods=['GET'])
+@app.route("/")
 def hello_world():
     args = request.args
     return args

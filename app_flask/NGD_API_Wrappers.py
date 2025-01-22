@@ -52,7 +52,7 @@ def get_single_latest_collection(collection: str, **kwargs) -> str:
     More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
     '''
     latest_collections = get_latest_collection_versions(**kwargs)
-    latest_collection = latest_collections[collection]
+    latest_collection = latest_collections[0][collection]
     return latest_collection
 
 def get_access_token(client_id: str, client_secret: str) -> str:
@@ -207,10 +207,9 @@ def ngd_items_request(
     query_params_ = query_params.copy()
     filter_params_ = filter_params.copy()
     headers_ = headers.copy()
-    collection_ = collection.copy()
 
     if use_latest_collection:
-        collection_ = get_single_latest_collection(collection, flag_recent_updates = False)
+        collection = get_single_latest_collection(collection, flag_recent_updates = False)
 
     if filter_params_:
         filters = construct_filter_param(**filter_params_)
@@ -223,7 +222,7 @@ def ngd_items_request(
         query_params_['filter'] = f'({current_filters})and{spatial_filter}' if current_filters else spatial_filter
 
     query_params_string = construct_query_params(**query_params_)
-    url = f'https://api.os.uk/features/ngd/ofa/v1/collections/{collection_}/items/{query_params_string}'
+    url = f'https://api.os.uk/features/ngd/ofa/v1/collections/{collection}/items/{query_params_string}'
     if access_token:
         headers_['Authorization'] = f"Bearer {access_token}"
     response = r.get(url, headers=headers_, **kwargs)
@@ -233,7 +232,7 @@ def ngd_items_request(
         raise Exception(json_response)
 
     for feature in json_response['features']:
-        feature['collection'] = collection_
+        feature['collection'] = collection
 
     if add_metadata:
         json_response['source'] = "Compiled from code by Geovation from Ordnance Survey"
