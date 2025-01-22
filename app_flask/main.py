@@ -50,7 +50,7 @@ def create_item_route(schema_class: Schema, handler_function, route_suffix: str,
     """Factory function to create route handlers for item endpoints"""
 
     collection_path_component = 'multi-collection' if multi_collections else '<collection>'
-    route = f"/catalyst/features/ngd/ofa/v1/collections/{collection_path_component}/items/{route_suffix}"
+    route = f"/catalyst/features/ngd/ofa/v1/collections/{collection_path_component}/items{route_suffix}"
 
     def handler(collection: str | list = None):
         schema = schema_class()
@@ -83,55 +83,62 @@ def create_item_route(schema_class: Schema, handler_function, route_suffix: str,
 
     return handler
 
+
+items_handler = create_item_route(
+    BaseSchema,
+    items_auth,
+    ""
+)
+
 items_auth_handler = create_item_route(
     BaseSchema,
     items_auth,
-    "auth"
+    "/auth"
 )
 
 items_auth_limit_handler = create_item_route(
     LimitSchema,
     items_auth_limit,
-    "auth-limit"
+    "/auth-limit"
 )
 
 items_auth_geom_handler = create_item_route(
     GeomSchema,
     items_auth_geom,
-    "auth-geom"
+    "/auth-geom"
 )
 
 items_auth_limit_geom_handler = create_item_route(
     LimitGeomSchema,
     items_auth_limit_geom,
-    "auth-limit-geom"
+    "/auth-limit-geom"
 )
 
 items_auth_col_handler = create_item_route(
     ColSchema,
     items_auth_col,
-    "auth-col",
+    "/auth-col",
     True
 )
 
 items_auth_limit_col_handler = create_item_route(
     LimitColSchema,
     items_auth_limit_col,
-    "auth-limit-col",
+    "/auth-limit-col",
     True
 )
 
 items_auth_geom_col_handler = create_item_route(
     GeomColSchema,
     items_auth_geom_col,
-    "auth-geom-col",
+    "/auth-geom-col",
     True
 )
 
 items_auth_limit_geom_col_handler = create_item_route(
     LimitGeomColSchema,
     items_auth_limit_geom_col,
-    "auth-limit-geom-col",
+    "/auth-limit-geom-col",
     True
 )
 
