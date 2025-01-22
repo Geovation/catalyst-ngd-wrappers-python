@@ -10,6 +10,8 @@ from marshmallow import Schema, INCLUDE
 from marshmallow.fields import Integer, String, Boolean, List
 
 class BaseSchema(Schema):
+    filter_wkt = String(required=False, data_key='filter-wkt')
+
     class Meta:
         unknown = INCLUDE  # Allows additional fields to pass through to query_params
 
@@ -18,7 +20,6 @@ class LimitSchema(BaseSchema):
     request_limit = Integer(data_key='request-limit', required=False)
 
 class GeomSchema(BaseSchema):
-    filter_wkt = String(required=False, data_key='filter-wkt')
     format_geojson = Boolean(required=False, data_key='format-geojson')
 
 class ColSchema(BaseSchema):

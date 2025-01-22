@@ -30,5 +30,17 @@ graph TD
     - The endpoint for this API is https://api.os.uk/features/ngd/ofa/v1/collections/{collectionId}/items
     - Documentation for the API can be found on the [OS Data Hub](https://osdatahub.os.uk/docs/ofa/overview) and on the [Gitbook docs for the National Geographic Database (NGD)](https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features)
 
-- http://127.0.0.1:5000/catalyst/features/ngd/ofa/v1/collections/{collectionId}/items/auth
+- items_handler
+    - Endpoint
+        - http://127.0.0.1:5000/catalyst/features/ngd/ofa/v1/collections/{collectionId}/items
     - Description
+        - A basic wrapper which does little more than replicate the functionality of 
+    - 
+                collection (str) - the feature collection to call from. Feature collection names and details can be found at https://api.os.uk/features/ngd/ofa/v1/collections/
+        query_params (dict, optional) - parameters to pass to the query as query parameters, supplied in a dictionary. Supported parameters are: bbox, bbox-crs, crs, datetime, filter, filter-crs, filter-lang, limit, offset
+        filter_params (dict, optional) - OS NGD attribute filters to pass to the query within the 'filter' query_param. The can be used instead of or in addition to manually setting the filter in query_params.
+            The key-value pairs will appended using the EQUAL TO [ = ] comparator. Any other CQL Operator comparisons must be set manually in query_params.
+            Queryable attributes can be found in OS NGD codelists documentation https://docs.os.uk/osngd/code-lists/code-lists-overview, or by inserting the relevant collectionId into the https://api.os.uk/features/ngd/ofa/v1/collections/{{collectionId}}/queryables endpoint.
+        filter_wkt (string or shapely geometry object) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a string or as a Shapely geometry object.
+            The function automatically composes the full INTERSECTS filter and adds it to the 'filter' query parameter.
+            Make sure that 'filter-crs' is set to the appropriate value.

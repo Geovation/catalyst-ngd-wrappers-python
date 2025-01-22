@@ -8,6 +8,53 @@ from shapely import from_wkt
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon
 from collections import defaultdict
 
+def get_latest_collection_versions(flag_recent_updates: bool = True, recent_update_days: int = 31) -> tuple[dict[str: str], list[str]]:
+    '''
+    Returns the latest collection versions of each NGD collection.
+    Feature collections follow the following naming convention: theme-collection-featuretype-version (eg. bld-fts-buildingline-2)
+    The output of this function maps base feature collection names (theme-collection-featuretype) to the full name, including the latest version.
+    This can be used to ensure that software is always using the latest version of a feature collection.
+    More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
+    '''
+
+    response = r.get('https://api.os.uk/features/ngd/ofa/v1/collections/')
+    collections_data = response.json()['collections']
+    collections_list = [collection['id'] for collection in collections_data]
+    collection_base_names = set([re.sub(r'-\d+$', '', c) for c in collections_list])
+    output_lookup = dict()
+
+    for base_name in collection_base_names:
+        all_versions = [c for c in collections_list if c.startswith(base_name)]
+        latest_version = max(all_versions, key=lambda c: int(c.split('-')[-1]))
+        output_lookup[base_name] = latest_version
+
+    recent_collections = None
+    if flag_recent_updates:
+        time_format = r'%Y-%m-%dT%H:%M:%SZ'
+        recent_update_cutoff = datetime.now() - timedelta(days=recent_update_days)
+        latest_versions_data = [c for c in collections_data if c['id'] in output_lookup.values()]
+        recent_collections = list()
+        for collection_data in latest_versions_data:
+            version_startdate = collection_data['extent']['temporal']['interval'][0][0]
+            time_obj = datetime.strptime(version_startdate, time_format)
+            if time_obj > recent_update_cutoff:
+                collection = collection_data['id']
+                recent_collections.append(collection)
+                logging.warning(f'{collection} is a recent version/update from the last {recent_update_days} days.')
+
+    return output_lookup, recent_collections
+
+def get_single_latest_collection(collection: str, **kwargs) -> str:
+    '''
+    Returns the latest collection of a given collection base.
+    Input must be in the format theme-collection-featuretype (eg. bld-fts-buildingline)
+    Output will complete the full name of the feature collection by appending the latest version number (eg. bld-fts-buildingline-2)
+    More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
+    '''
+    latest_collections = get_latest_collection_versions(**kwargs)
+    latest_collection = latest_collections[collection]
+    return latest_collection
+
 def get_access_token(client_id: str, client_secret: str) -> str:
     '''
     Supplies a temporary access token for of the OS NGD API
@@ -131,6 +178,7 @@ def ngd_items_request(
     query_params: dict = {},
     filter_params: dict = {},
     filter_wkt = None,
+    use_latest_collection: bool = False,
     headers: dict = {},
     access_token: str = None,
     add_metadata: bool = True,
@@ -159,6 +207,10 @@ def ngd_items_request(
     query_params_ = query_params.copy()
     filter_params_ = filter_params.copy()
     headers_ = headers.copy()
+    collection_ = collection.copy()
+
+    if use_latest_collection:
+        collection_ = get_single_latest_collection(collection, flag_recent_updates = False)
 
     if filter_params_:
         filters = construct_filter_param(**filter_params_)
@@ -171,7 +223,7 @@ def ngd_items_request(
         query_params_['filter'] = f'({current_filters})and{spatial_filter}' if current_filters else spatial_filter
 
     query_params_string = construct_query_params(**query_params_)
-    url = f'https://api.os.uk/features/ngd/ofa/v1/collections/{collection}/items/{query_params_string}'
+    url = f'https://api.os.uk/features/ngd/ofa/v1/collections/{collection_}/items/{query_params_string}'
     if access_token:
         headers_['Authorization'] = f"Bearer {access_token}"
     response = r.get(url, headers=headers_, **kwargs)
@@ -181,7 +233,7 @@ def ngd_items_request(
         raise Exception(json_response)
 
     for feature in json_response['features']:
-        feature['collection'] = collection
+        feature['collection'] = collection_
 
     if add_metadata:
         json_response['source'] = "Compiled from code by Geovation from Ordnance Survey"
@@ -386,53 +438,6 @@ def multiple_collections_extension(func: callable) -> dict:
         {func.__doc__}
     """
     return wrapper
-
-def get_latest_collection_versions(flag_recent_updates: bool = True, recent_update_days: int = 31) -> tuple[dict[str: str], list[str]]:
-    '''
-    Returns the latest collection versions of each NGD collection.
-    Feature collections follow the following naming convention: theme-collection-featuretype-version (eg. bld-fts-buildingline-2)
-    The output of this function maps base feature collection names (theme-collection-featuretype) to the full name, including the latest version.
-    This can be used to ensure that software is always using the latest version of a feature collection.
-    More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
-    '''
-
-    response = r.get('https://api.os.uk/features/ngd/ofa/v1/collections/')
-    collections_data = response.json()['collections']
-    collections_list = [collection['id'] for collection in collections_data]
-    collection_base_names = set([re.sub(r'-\d+$', '', c) for c in collections_list])
-    output_lookup = dict()
-
-    for base_name in collection_base_names:
-        all_versions = [c for c in collections_list if c.startswith(base_name)]
-        latest_version = max(all_versions, key=lambda c: int(c.split('-')[-1]))
-        output_lookup[base_name] = latest_version
-
-    recent_collections = None
-    if flag_recent_updates:
-        time_format = r'%Y-%m-%dT%H:%M:%SZ'
-        recent_update_cutoff = datetime.now() - timedelta(days=recent_update_days)
-        latest_versions_data = [c for c in collections_data if c['id'] in output_lookup.values()]
-        recent_collections = list()
-        for collection_data in latest_versions_data:
-            version_startdate = collection_data['extent']['temporal']['interval'][0][0]
-            time_obj = datetime.strptime(version_startdate, time_format)
-            if time_obj > recent_update_cutoff:
-                collection = collection_data['id']
-                recent_collections.append(collection)
-                logging.warning(f'{collection} is a recent version/update from the last {recent_update_days} days.')
-
-    return output_lookup, recent_collections
-
-def get_single_latest_collection(collection: str, **kwargs) -> str:
-    '''
-    Returns the latest collection of a given collection base.
-    Input must be in the format theme-collection-featuretype (eg. bld-fts-buildingline)
-    Output will complete the full name of the feature collection by appending the latest version number (eg. bld-fts-buildingline-2)
-    More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
-    '''
-    latest_collections = get_latest_collection_versions(**kwargs)
-    latest_collection = latest_collections[collection]
-    return latest_collection
 
 # All possible ways of combining different wrappers in combos with OAuth2
 
