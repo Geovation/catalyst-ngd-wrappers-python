@@ -44,19 +44,16 @@ def get_latest_collection_versions(flag_recent_updates: bool = True, recent_upda
 
     return output_lookup, recent_collections
 
-def get_single_latest_collection(collection: str, **kwargs) -> str:
+def get_specific_latest_collections(collections: list[str], **kwargs) -> str:
     '''
-    Returns the latest collection of a given collection base.
-    Input must be in the format theme-collection-featuretype (eg. bld-fts-buildingline)
-    Output will complete the full name of the feature collection by appending the latest version number (eg. bld-fts-buildingline-2)
+    Returns the latest collection(s) from the base name of given collection(s).
+    Input must be a list in the format theme-collection-featuretype (eg. bld-fts-buildingline)
+    Output will supply a dictionary completing the full name of the feature collections by appending the latest version number (eg. bld-fts-buildingline-2)
     More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
     '''
-    latest_collections = get_latest_collection_versions(**kwargs)
-    try:
-        latest_collection = latest_collections[0][collection]
-    except KeyError:
-        raise KeyError(f"Collection '{collection}' not found in the latest collections. Please check the collection name and ensure it follows the format: theme-collection-featuretype")
-    return latest_collection
+    latest_collections = get_latest_collection_versions(**kwargs)[0]
+    specific_latest_collections = {col: latest_collections.get(col, col) for col in collections}
+    return specific_latest_collections
 
 def get_access_token(client_id: str, client_secret: str) -> str:
     '''
@@ -200,6 +197,8 @@ def ngd_items_request(
         filter_wkt (string or shapely geometry object) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a string or as a Shapely geometry object.
             The function automatically composes the full INTERSECTS filter and adds it to the 'filter' query parameter.
             Make sure that 'filter-crs' is set to the appropriate value.
+        use_latest_collection (boolean, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. bld-fts-building[-2]), the latest version is used.
+            Note that if use_latest_collection but 'collection' does specify a version, the specified version is always used regardless of use_latest_collection.
         headers (dict, optional) - Headers to pass to the query. These can include bearer-token authentication.
         access_token (str) - An access token, which will be added as bearer token to the headers.
         **kwargs: other generic parameters to be passed to the requests.get()
@@ -212,7 +211,7 @@ def ngd_items_request(
     headers_ = headers.copy()
 
     if use_latest_collection:
-        collection = get_single_latest_collection(collection, flag_recent_updates = False)
+        collection = get_specific_latest_collections([collection], flag_recent_updates=False).get(collection)
 
     if filter_params_:
         filters = construct_filter_param(**filter_params_)
@@ -391,7 +390,10 @@ def multigeometry_search_extension(func: callable):
 
 def multiple_collections_extension(func: callable) -> dict:
 
-    def wrapper(collection: list[str], heirarchical_output: bool = False, *args, **kwargs):
+    def wrapper(collection: list[str], heirarchical_output: bool = False, use_latest_collection: bool = False, *args, **kwargs):
+
+        if use_latest_collection:
+            collection = get_specific_latest_collections(collection).values()
 
         results = dict()
         for c in collection:

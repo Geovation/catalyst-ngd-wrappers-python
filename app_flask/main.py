@@ -59,7 +59,7 @@ def latest_single_collection(collection: str = None):
     schema = LatestCollectionsSchema()
     args = request.args.to_dict()
     parsed_params = schema.load(args)
-    return get_single_latest_collection(collection, **parsed_params)
+    return get_specific_latest_collections([collection], **parsed_params)
 
 def delistify(params: dict):
     for k, v in params.items():

@@ -35,8 +35,8 @@ graph TD
         - http://127.0.0.1:5000/catalyst/features/ngd/ofa/v1/collections/{collectionId}/items
     - Description
         - A basic wrapper which does little more than replicate the functionality of 
-    - 
-                collection (str) - the feature collection to call from. Feature collection names and details can be found at https://api.os.uk/features/ngd/ofa/v1/collections/
+    - Params
+        collection (str) - the feature collection to call from. Feature collection names and details can be found at https://api.os.uk/features/ngd/ofa/v1/collections/
         query_params (dict, optional) - parameters to pass to the query as query parameters, supplied in a dictionary. Supported parameters are: bbox, bbox-crs, crs, datetime, filter, filter-crs, filter-lang, limit, offset
         filter_params (dict, optional) - OS NGD attribute filters to pass to the query within the 'filter' query_param. The can be used instead of or in addition to manually setting the filter in query_params.
             The key-value pairs will appended using the EQUAL TO [ = ] comparator. Any other CQL Operator comparisons must be set manually in query_params.
@@ -44,3 +44,5 @@ graph TD
         filter_wkt (string or shapely geometry object) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a string or as a Shapely geometry object.
             The function automatically composes the full INTERSECTS filter and adds it to the 'filter' query parameter.
             Make sure that 'filter-crs' is set to the appropriate value.
+        use_latest_collection (boolean, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. bld-fts-building[-2]), the latest version is used.
+            Note that if use_latest_collection but 'collection' does specify a version, the specified version is always used regardless of use_latest_collection.
