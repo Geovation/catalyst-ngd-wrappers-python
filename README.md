@@ -44,5 +44,5 @@ graph TD
         filter_wkt (string or shapely geometry object) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a string or as a Shapely geometry object.
             The function automatically composes the full INTERSECTS filter and adds it to the 'filter' query parameter.
             Make sure that 'filter-crs' is set to the appropriate value.
-        use_latest_collection (boolean, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. bld-fts-building[-2]), the latest version is used.
+        use_latest_collection (boolean, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. bld-fts-building~~-2~~), the latest version is used.
             Note that if use_latest_collection but 'collection' does specify a version, the specified version is always used regardless of use_latest_collection.
