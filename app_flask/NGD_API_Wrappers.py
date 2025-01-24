@@ -207,8 +207,6 @@ def ngd_items_request(
     """
 
     kwargs.pop('hierarchical_output', None)
-    print('KWARGS\n\n')
-    print(kwargs)
     query_params_ = query_params.copy()
     filter_params_ = filter_params.copy()
     headers_ = headers.copy()
@@ -394,14 +392,12 @@ def multiple_collections_extension(func: callable) -> dict:
 
     def wrapper(collections: list[str], hierarchical_output: bool=False, use_latest_collection: bool=False, *args, **kwargs):
 
-        collections_ = copy(collections)
-
         if use_latest_collection:
-            collections_ = get_specific_latest_collections(collections_).values()
+            collections = get_specific_latest_collections(collections).values()
 
         results = dict()
-        for col in collections_:
-            json_response = func(col, hierarchical_output=hierarchical_output, *args, **kwargs)
+        for col in collections:
+            json_response = func(*args, collection=col, hierarchical_output=hierarchical_output, **kwargs)
             results[col] = json_response
 
         if hierarchical_output:
