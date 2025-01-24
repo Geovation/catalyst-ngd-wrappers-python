@@ -27,7 +27,7 @@ class LimitSchema(BaseSchema):
 class GeomSchema(BaseSchema):
     hierarchical_output = Boolean(required=False, data_key='hierarchical-output')
 
-class ColSchema(BaseSchema):
+class ColSchema(GeomSchema):
     collections = List(String(), required=True, data_key='collection')
 
 class LimitGeomSchema(LimitSchema, GeomSchema):
@@ -36,10 +36,10 @@ class LimitGeomSchema(LimitSchema, GeomSchema):
 class LimitColSchema(LimitSchema, ColSchema):
     """Combining Limit and Col schemas"""
 
-class GeomColSchema(GeomSchema, ColSchema):
+class GeomColSchema(ColSchema):
     """Combining Geom and Col schemas"""
 
-class LimitGeomColSchema(LimitSchema, GeomSchema, ColSchema):
+class LimitGeomColSchema(LimitSchema, ColSchema):
     """Combining Limit, Geom, and Col schemas"""
 
 @app.route("/")

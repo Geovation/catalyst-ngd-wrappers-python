@@ -206,6 +206,9 @@ def ngd_items_request(
     Returns the features as a geojson, as per the OS NGD API.
     """
 
+    kwargs.pop('hierarchical_output', None)
+    print('KWARGS\n\n')
+    print(kwargs)
     query_params_ = query_params.copy()
     filter_params_ = filter_params.copy()
     headers_ = headers.copy()
@@ -313,7 +316,7 @@ def limit_extension(func: callable):
 
 def multigeometry_search_extension(func: callable):
 
-    def wrapper(*args, filter_wkt: str, hierarchical_output: bool = False, **kwargs):
+    def wrapper(*args, filter_wkt: str, hierarchical_output: bool=False, **kwargs):
 
         full_geom = from_wkt(filter_wkt) if type(filter_wkt) == str else filter_wkt
         search_areas = list()
@@ -389,21 +392,18 @@ def multigeometry_search_extension(func: callable):
 
 def multiple_collections_extension(func: callable) -> dict:
 
-    def wrapper(collections: list[str], hierarchical_output: bool = False, use_latest_collection: bool = False, *args, **kwargs):
-        print('running')
+    def wrapper(collections: list[str], hierarchical_output: bool=False, use_latest_collection: bool=False, *args, **kwargs):
 
         collections_ = copy(collections)
 
         if use_latest_collection:
             collections_ = get_specific_latest_collections(collections_).values()
-        print('\n\n')
-        print(collections_)
 
         results = dict()
         for col in collections_:
             json_response = func(col, hierarchical_output=hierarchical_output, *args, **kwargs)
             results[col] = json_response
-        
+
         if hierarchical_output:
             return results
     
@@ -428,11 +428,11 @@ def multiple_collections_extension(func: callable) -> dict:
             numberReturned = col_results.pop('numberReturned')
             geojson['numberReturned'] += numberReturned
             geojson['numberReturnedByCollection'][col] = numberReturned
-        
+
         geojson['timeStamp'] = datetime.now().isoformat()
 
         return geojson
-    
+
     wrapper.__name__ = func.__name__ + '+multiple_collections_extension'
     funcname = func.__name__
     wrapper.__doc__ = f"""
@@ -453,12 +453,12 @@ items = ngd_items_request
 items_auth = OAauth2_manager(items)
 
 items_limit = limit_extension(items)
-items_geom = multigeometry_search_extension(items_limit)
-items_col = multiple_collections_extension(items_geom)
-items_limit_geom = multigeometry_search_extension(items_col)
-items_limit_col = multiple_collections_extension(items_limit_geom)
-items_geom_col = multiple_collections_extension(items_limit_col)
-items_limit_geom_col = multiple_collections_extension(items_geom_col)
+items_geom = multigeometry_search_extension(items)
+items_col = multiple_collections_extension(items)
+items_limit_geom = multigeometry_search_extension(items_limit)
+items_limit_col = multiple_collections_extension(items_limit)
+items_geom_col = multiple_collections_extension(items_geom)
+items_limit_geom_col = multiple_collections_extension(items_limit_geom)
 
 items_auth_limit = limit_extension(items_auth)
 items_auth_geom = multigeometry_search_extension(items_auth)
