@@ -445,14 +445,21 @@ def multiple_collections_extension(func: callable) -> dict:
 
 # All possible ways of combining different wrappers in combos with OAuth2
 
+items = ngd_items_request
 items_auth = OAauth2_manager(ngd_items_request)
+
+items_limit = limit_extension(ngd_items_request)
+items_geom = multigeometry_search_extension(items_limit)
+items_col = multiple_collections_extension(items_geom)
+items_limit_geom = multigeometry_search_extension(items_col)
+items_limit_col = multiple_collections_extension(items_limit_geom)
+items_geom_col = multiple_collections_extension(items_limit_col)
+items_limit_geom_col = multiple_collections_extension(items_geom_col)
+
 items_auth_limit = limit_extension(items_auth)
-items_auth_limit_geom = multigeometry_search_extension(items_auth_limit)
-items_auth_limit_geom_col = multiple_collections_extension(items_auth_limit_geom)
-
 items_auth_geom = multigeometry_search_extension(items_auth)
-items_auth_geom_col = multiple_collections_extension(items_auth_geom)
-
-items_auth_limit_col = multiple_collections_extension(items_auth_limit)
-
 items_auth_col = multiple_collections_extension(items_auth)
+items_auth_limit_geom = multigeometry_search_extension(items_auth_limit)
+items_auth_limit_col = multiple_collections_extension(items_auth_limit)
+items_auth_geom_col = multiple_collections_extension(items_auth_geom)
+items_auth_limit_geom_col = multiple_collections_extension(items_auth_limit_geom)

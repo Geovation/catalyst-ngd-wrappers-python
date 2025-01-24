@@ -46,3 +46,7 @@ graph TD
             Make sure that 'filter-crs' is set to the appropriate value.
         - use_latest_collection (boolean, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. bld-fts-building<s>-2</s>), the latest version is used.
             Note that if use_latest_collection but 'collection' does specify a version, the specified version is always used regardless of use_latest_collection.
+- auth_handler
+    - Endpoint
+        - http://127.0.0.1:5000/catalyst/features/ngd/ofa/v1/collections/{collectionId}/items/
+    - 

@@ -103,7 +103,6 @@ def create_item_route(schema_class: Schema, handler_function, route_suffix: str,
 
     return handler
 
-
 items_handler = create_item_route(
     BaseSchema,
     items_auth,
@@ -115,6 +114,54 @@ items_auth_handler = create_item_route(
     items_auth,
     "/auth"
 )
+
+
+items_limit_handler = create_item_route(
+    LimitSchema,
+    items_limit,
+    "/limit"
+)
+
+items_geom_handler = create_item_route(
+    GeomSchema,
+    items_geom,
+    "/geom"
+)
+
+items_col_handler = create_item_route(
+    ColSchema,
+    items_col,
+    "/col",
+    True
+)
+
+items_limit_geom_handler = create_item_route(
+    LimitGeomSchema,
+    items_limit_geom,
+    "/limit-geom"
+)
+
+items_limit_col_handler = create_item_route(
+    LimitColSchema,
+    items_limit_col,
+    "/limit-col",
+    True
+)
+
+items_geom_col_handler = create_item_route(
+    GeomColSchema,
+    items_geom_col,
+    "/geom-col",
+    True
+)
+
+items_limit_geom_col_handler = create_item_route(
+    LimitGeomColSchema,
+    items_limit_geom_col,
+    "/limit-geom-col",
+    True
+)
+
 
 items_auth_limit_handler = create_item_route(
     LimitSchema,
@@ -128,17 +175,17 @@ items_auth_geom_handler = create_item_route(
     "/auth-geom"
 )
 
-items_auth_limit_geom_handler = create_item_route(
-    LimitGeomSchema,
-    items_auth_limit_geom,
-    "/auth-limit-geom"
-)
-
 items_auth_col_handler = create_item_route(
     ColSchema,
     items_auth_col,
     "/auth-col",
     True
+)
+
+items_auth_limit_geom_handler = create_item_route(
+    LimitGeomSchema,
+    items_auth_limit_geom,
+    "/auth-limit-geom"
 )
 
 items_auth_limit_col_handler = create_item_route(
@@ -161,6 +208,7 @@ items_auth_limit_geom_col_handler = create_item_route(
     "/auth-limit-geom-col",
     True
 )
+
 
 if __name__ == "__main__":
     app.run(debug=True)
