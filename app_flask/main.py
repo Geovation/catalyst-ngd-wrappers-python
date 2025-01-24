@@ -25,10 +25,10 @@ class LimitSchema(BaseSchema):
     request_limit = Integer(data_key='request-limit', required=False)
 
 class GeomSchema(BaseSchema):
-    format_geojson = Boolean(required=False, data_key='format-geojson')
+    hierarchical_output = Boolean(required=False, data_key='hierarchical-output')
 
 class ColSchema(BaseSchema):
-    collection = List(String(), required=True, data_key='collection')
+    collections = List(String(), required=True, data_key='collection')
 
 class LimitGeomSchema(LimitSchema, GeomSchema):
     """Combining Limit and Geom schemas"""
@@ -105,7 +105,7 @@ def create_item_route(schema_class: Schema, handler_function, route_suffix: str,
 
 items_handler = create_item_route(
     BaseSchema,
-    items_auth,
+    items,
     ""
 )
 

@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from shapely import from_wkt
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon
-from collections import defaultdict
+from copy import copy
 
 def get_latest_collection_versions(flag_recent_updates: bool = True, recent_update_days: int = 31) -> tuple[dict[str: str], list[str]]:
     '''
@@ -313,7 +313,7 @@ def limit_extension(func: callable):
 
 def multigeometry_search_extension(func: callable):
 
-    def wrapper(*args, filter_wkt: str, heirarchical_output: bool = False, **kwargs):
+    def wrapper(*args, filter_wkt: str, hierarchical_output: bool = False, **kwargs):
 
         full_geom = from_wkt(filter_wkt) if type(filter_wkt) == str else filter_wkt
         search_areas = list()
@@ -326,7 +326,7 @@ def multigeometry_search_extension(func: callable):
             json_response['searchAreaNumber'] = search_area
             search_areas.append(json_response)
 
-        if heirarchical_output:
+        if hierarchical_output:
             response = {
                 "searchAreas": search_areas
             }
@@ -353,7 +353,6 @@ def multigeometry_search_extension(func: callable):
             new_features = list()
             for f in features:
                 if f['id'] in ids:
-                    print(f['id'])
                     index = [v for v, gf in enumerate(geojson_fts) if gf['id'] == f['id']][0]
                     n = geojson_fts[index]['searchAreaNumber']
                     n = [n] if type(n) != list else n
@@ -390,17 +389,22 @@ def multigeometry_search_extension(func: callable):
 
 def multiple_collections_extension(func: callable) -> dict:
 
-    def wrapper(collection: list[str], heirarchical_output: bool = False, use_latest_collection: bool = False, *args, **kwargs):
+    def wrapper(collections: list[str], hierarchical_output: bool = False, use_latest_collection: bool = False, *args, **kwargs):
+        print('running')
+
+        collections_ = copy(collections)
 
         if use_latest_collection:
-            collection = get_specific_latest_collections(collection).values()
+            collections_ = get_specific_latest_collections(collections_).values()
+        print('\n\n')
+        print(collections_)
 
         results = dict()
-        for c in collection:
-            json_response = func(c, heirarchical_output=heirarchical_output, *args, **kwargs)
-            results[c] = json_response
+        for col in collections_:
+            json_response = func(col, hierarchical_output=hierarchical_output, *args, **kwargs)
+            results[col] = json_response
         
-        if heirarchical_output:
+        if hierarchical_output:
             return results
     
         geojson = {
@@ -413,17 +417,17 @@ def multiple_collections_extension(func: callable) -> dict:
             'features': []
         }
 
-        for collection, collection_results in results.items():
+        for col, col_results in results.items():
 
-            collection_results.pop('timeStamp')
-            features = collection_results['features']
+            col_results.pop('timeStamp')
+            features = col_results['features']
             geojson['features'] += features
-            numberOfRequests = collection_results.pop('numberOfRequests')
+            numberOfRequests = col_results.pop('numberOfRequests')
             geojson['numberOfRequests'] += numberOfRequests
-            geojson['numberOfRequestsByCollection'][collection] = numberOfRequests
-            numberReturned = collection_results.pop('numberReturned')
+            geojson['numberOfRequestsByCollection'][col] = numberOfRequests
+            numberReturned = col_results.pop('numberReturned')
             geojson['numberReturned'] += numberReturned
-            geojson['numberReturnedByCollection'][collection] = numberReturned
+            geojson['numberReturnedByCollection'][col] = numberReturned
         
         geojson['timeStamp'] = datetime.now().isoformat()
 
@@ -446,9 +450,9 @@ def multiple_collections_extension(func: callable) -> dict:
 # All possible ways of combining different wrappers in combos with OAuth2
 
 items = ngd_items_request
-items_auth = OAauth2_manager(ngd_items_request)
+items_auth = OAauth2_manager(items)
 
-items_limit = limit_extension(ngd_items_request)
+items_limit = limit_extension(items)
 items_geom = multigeometry_search_extension(items_limit)
 items_col = multiple_collections_extension(items_geom)
 items_limit_geom = multigeometry_search_extension(items_col)
