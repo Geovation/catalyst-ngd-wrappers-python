@@ -30,11 +30,11 @@ graph TD
     - The endpoint for this API is https://api.os.uk/features/ngd/ofa/v1/collections/{collectionId}/items
     - Documentation for the API can be found on the [OS Data Hub](https://osdatahub.os.uk/docs/ofa/overview) and on the [Gitbook docs for the National Geographic Database (NGD)](https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features)
 
-- items_handler
+- items
     - Endpoint
         - http://127.0.0.1:5000/catalyst/features/ngd/ofa/v1/collections/{collectionId}/items
     - Description
-        - A basic wrapper which does little more than replicate the functionality of 
+        - A basic wrapper which does little more than replicate the functionality of OS NGD API - Features
     - Params
         - collection (str) - the feature collection to call from. Feature collection names and details can be found at https://api.os.uk/features/ngd/ofa/v1/collections/
         - query_params (dict, optional) - parameters to pass to the query as query parameters, supplied in a dictionary. Supported parameters are: bbox, bbox-crs, crs, datetime, filter, filter-crs, filter-lang, limit, offset
@@ -48,5 +48,11 @@ graph TD
             Note that if use_latest_collection but 'collection' does specify a version, the specified version is always used regardless of use_latest_collection.
 - auth_handler
     - Endpoint
-        - http://127.0.0.1:5000/catalyst/features/ngd/ofa/v1/collections/{collectionId}/items/
-    - 
+        - http://127.0.0.1:5000/catalyst/features/ngd/ofa/v1/collections/{collectionId}/items/auth
+    - Description
+        - Enables OAuth2 authentication
+- limit_handler
+    - Endpoint
+        - http://127.0.0.1:5000/catalyst/features/ngd/ofa/v1/collections/{collectionId}/items/limit
+    - Description
+        - Enables the limit parameter to exceed 100.
