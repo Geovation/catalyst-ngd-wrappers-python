@@ -6,7 +6,54 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from shapely import from_wkt
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon
-from collections import defaultdict
+from copy import copy
+
+def get_latest_collection_versions(flag_recent_updates: bool = True, recent_update_days: int = 31) -> tuple[dict[str: str], list[str]]:
+    '''
+    Returns the latest collection versions of each NGD collection.
+    Feature collections follow the following naming convention: theme-collection-featuretype-version (eg. bld-fts-buildingline-2)
+    The output of this function maps base feature collection names (theme-collection-featuretype) to the full name, including the latest version.
+    This can be used to ensure that software is always using the latest version of a feature collection.
+    More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
+    '''
+
+    response = r.get('https://api.os.uk/features/ngd/ofa/v1/collections/')
+    collections_data = response.json()['collections']
+    collections_list = [collection['id'] for collection in collections_data]
+    collection_base_names = set([re.sub(r'-\d+$', '', c) for c in collections_list])
+    output_lookup = dict()
+
+    for base_name in collection_base_names:
+        all_versions = [c for c in collections_list if c.startswith(base_name)]
+        latest_version = max(all_versions, key=lambda c: int(c.split('-')[-1]))
+        output_lookup[base_name] = latest_version
+
+    recent_collections = None
+    if flag_recent_updates:
+        time_format = r'%Y-%m-%dT%H:%M:%SZ'
+        recent_update_cutoff = datetime.now() - timedelta(days=recent_update_days)
+        latest_versions_data = [c for c in collections_data if c['id'] in output_lookup.values()]
+        recent_collections = list()
+        for collection_data in latest_versions_data:
+            version_startdate = collection_data['extent']['temporal']['interval'][0][0]
+            time_obj = datetime.strptime(version_startdate, time_format)
+            if time_obj > recent_update_cutoff:
+                collection = collection_data['id']
+                recent_collections.append(collection)
+                logging.warning(f'{collection} is a recent version/update from the last {recent_update_days} days.')
+
+    return output_lookup, recent_collections
+
+def get_specific_latest_collections(collections: list[str], **kwargs) -> str:
+    '''
+    Returns the latest collection(s) from the base name of given collection(s).
+    Input must be a list in the format theme-collection-featuretype (eg. bld-fts-buildingline)
+    Output will supply a dictionary completing the full name of the feature collections by appending the latest version number (eg. bld-fts-buildingline-2)
+    More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
+    '''
+    latest_collections = get_latest_collection_versions(**kwargs)[0]
+    specific_latest_collections = {col: latest_collections.get(col, col) for col in collections}
+    return specific_latest_collections
 
 def get_access_token(client_id: str, client_secret: str) -> str:
     '''
@@ -131,6 +178,7 @@ def ngd_items_request(
     query_params: dict = {},
     filter_params: dict = {},
     filter_wkt = None,
+    use_latest_collection: bool = False,
     headers: dict = {},
     access_token: str = None,
     add_metadata: bool = True,
@@ -149,6 +197,8 @@ def ngd_items_request(
         filter_wkt (string or shapely geometry object) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a string or as a Shapely geometry object.
             The function automatically composes the full INTERSECTS filter and adds it to the 'filter' query parameter.
             Make sure that 'filter-crs' is set to the appropriate value.
+        use_latest_collection (boolean, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. bld-fts-building[-2]), the latest version is used.
+            Note that if use_latest_collection but 'collection' does specify a version, the specified version is always used regardless of use_latest_collection.
         headers (dict, optional) - Headers to pass to the query. These can include bearer-token authentication.
         access_token (str) - An access token, which will be added as bearer token to the headers.
         **kwargs: other generic parameters to be passed to the requests.get()
@@ -156,9 +206,13 @@ def ngd_items_request(
     Returns the features as a geojson, as per the OS NGD API.
     """
 
+    kwargs.pop('hierarchical_output', None)
     query_params_ = query_params.copy()
     filter_params_ = filter_params.copy()
     headers_ = headers.copy()
+
+    if use_latest_collection:
+        collection = get_specific_latest_collections([collection], flag_recent_updates=False).get(collection)
 
     if filter_params_:
         filters = construct_filter_param(**filter_params_)
@@ -260,7 +314,7 @@ def limit_extension(func: callable):
 
 def multigeometry_search_extension(func: callable):
 
-    def wrapper(*args, filter_wkt: str, heirarchical_output: bool = False, **kwargs):
+    def wrapper(*args, filter_wkt: str, hierarchical_output: bool=False, **kwargs):
 
         full_geom = from_wkt(filter_wkt) if type(filter_wkt) == str else filter_wkt
         search_areas = list()
@@ -273,7 +327,7 @@ def multigeometry_search_extension(func: callable):
             json_response['searchAreaNumber'] = search_area
             search_areas.append(json_response)
 
-        if heirarchical_output:
+        if hierarchical_output:
             response = {
                 "searchAreas": search_areas
             }
@@ -300,7 +354,6 @@ def multigeometry_search_extension(func: callable):
             new_features = list()
             for f in features:
                 if f['id'] in ids:
-                    print(f['id'])
                     index = [v for v, gf in enumerate(geojson_fts) if gf['id'] == f['id']][0]
                     n = geojson_fts[index]['searchAreaNumber']
                     n = [n] if type(n) != list else n
@@ -337,14 +390,17 @@ def multigeometry_search_extension(func: callable):
 
 def multiple_collections_extension(func: callable) -> dict:
 
-    def wrapper(collection: list[str], heirarchical_output: bool = False, *args, **kwargs):
+    def wrapper(collections: list[str], hierarchical_output: bool=False, use_latest_collection: bool=False, *args, **kwargs):
+
+        if use_latest_collection:
+            collections = get_specific_latest_collections(collections).values()
 
         results = dict()
-        for c in collection:
-            json_response = func(c, heirarchical_output=heirarchical_output, *args, **kwargs)
-            results[c] = json_response
-        
-        if heirarchical_output:
+        for col in collections:
+            json_response = func(*args, collection=col, hierarchical_output=hierarchical_output, **kwargs)
+            results[col] = json_response
+
+        if hierarchical_output:
             return results
     
         geojson = {
@@ -357,22 +413,22 @@ def multiple_collections_extension(func: callable) -> dict:
             'features': []
         }
 
-        for collection, collection_results in results.items():
+        for col, col_results in results.items():
 
-            collection_results.pop('timeStamp')
-            features = collection_results['features']
+            col_results.pop('timeStamp')
+            features = col_results['features']
             geojson['features'] += features
-            numberOfRequests = collection_results.pop('numberOfRequests')
+            numberOfRequests = col_results.pop('numberOfRequests')
             geojson['numberOfRequests'] += numberOfRequests
-            geojson['numberOfRequestsByCollection'][collection] = numberOfRequests
-            numberReturned = collection_results.pop('numberReturned')
+            geojson['numberOfRequestsByCollection'][col] = numberOfRequests
+            numberReturned = col_results.pop('numberReturned')
             geojson['numberReturned'] += numberReturned
-            geojson['numberReturnedByCollection'][collection] = numberReturned
-        
+            geojson['numberReturnedByCollection'][col] = numberReturned
+
         geojson['timeStamp'] = datetime.now().isoformat()
 
         return geojson
-    
+
     wrapper.__name__ = func.__name__ + '+multiple_collections_extension'
     funcname = func.__name__
     wrapper.__doc__ = f"""
@@ -387,63 +443,23 @@ def multiple_collections_extension(func: callable) -> dict:
     """
     return wrapper
 
-def get_latest_collection_versions(flag_recent_updates: bool = True, recent_update_days: int = 31) -> tuple[dict[str: str], list[str]]:
-    '''
-    Returns the latest collection versions of each NGD collection.
-    Feature collections follow the following naming convention: theme-collection-featuretype-version (eg. bld-fts-buildingline-2)
-    The output of this function maps base feature collection names (theme-collection-featuretype) to the full name, including the latest version.
-    This can be used to ensure that software is always using the latest version of a feature collection.
-    More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
-    '''
-
-    response = r.get('https://api.os.uk/features/ngd/ofa/v1/collections/')
-    collections_data = response.json()['collections']
-    collections_list = [collection['id'] for collection in collections_data]
-    collection_base_names = set([re.sub(r'-\d+$', '', c) for c in collections_list])
-    output_lookup = dict()
-
-    for base_name in collection_base_names:
-        all_versions = [c for c in collections_list if c.startswith(base_name)]
-        latest_version = max(all_versions, key=lambda c: int(c.split('-')[-1]))
-        output_lookup[base_name] = latest_version
-
-    recent_collections = None
-    if flag_recent_updates:
-        time_format = r'%Y-%m-%dT%H:%M:%SZ'
-        recent_update_cutoff = datetime.now() - timedelta(days=recent_update_days)
-        latest_versions_data = [c for c in collections_data if c['id'] in output_lookup.values()]
-        recent_collections = list()
-        for collection_data in latest_versions_data:
-            version_startdate = collection_data['extent']['temporal']['interval'][0][0]
-            time_obj = datetime.strptime(version_startdate, time_format)
-            if time_obj > recent_update_cutoff:
-                collection = collection_data['id']
-                recent_collections.append(collection)
-                logging.warning(f'{collection} is a recent version/update from the last {recent_update_days} days.')
-
-    return output_lookup, recent_collections
-
-def get_single_latest_collection(collection: str, **kwargs) -> str:
-    '''
-    Returns the latest collection of a given collection base.
-    Input must be in the format theme-collection-featuretype (eg. bld-fts-buildingline)
-    Output will complete the full name of the feature collection by appending the latest version number (eg. bld-fts-buildingline-2)
-    More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
-    '''
-    latest_collections = get_latest_collection_versions(**kwargs)
-    latest_collection = latest_collections[collection]
-    return latest_collection
-
 # All possible ways of combining different wrappers in combos with OAuth2
 
-items_auth = OAauth2_manager(ngd_items_request)
+items = ngd_items_request
+items_auth = OAauth2_manager(items)
+
+items_limit = limit_extension(items)
+items_geom = multigeometry_search_extension(items)
+items_col = multiple_collections_extension(items)
+items_limit_geom = multigeometry_search_extension(items_limit)
+items_limit_col = multiple_collections_extension(items_limit)
+items_geom_col = multiple_collections_extension(items_geom)
+items_limit_geom_col = multiple_collections_extension(items_limit_geom)
+
 items_auth_limit = limit_extension(items_auth)
-items_auth_limit_geom = multigeometry_search_extension(items_auth_limit)
-items_auth_limit_geom_col = multiple_collections_extension(items_auth_limit_geom)
-
 items_auth_geom = multigeometry_search_extension(items_auth)
-items_auth_geom_col = multiple_collections_extension(items_auth_geom)
-
-items_auth_limit_col = multiple_collections_extension(items_auth_limit)
-
 items_auth_col = multiple_collections_extension(items_auth)
+items_auth_limit_geom = multigeometry_search_extension(items_auth_limit)
+items_auth_limit_col = multiple_collections_extension(items_auth_limit)
+items_auth_geom_col = multiple_collections_extension(items_auth_geom)
+items_auth_limit_geom_col = multiple_collections_extension(items_auth_limit_geom)

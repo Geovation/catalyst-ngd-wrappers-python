@@ -23,3 +23,36 @@ graph TD
     B --> D
     C --> D
 ```
+
+# API Documentation
+
+- All the Catalyst APIs extend the core functionality of GET request for items using the OS NGD API - Features
+    - The endpoint for this API is https://api.os.uk/features/ngd/ofa/v1/collections/{collectionId}/items
+    - Documentation for the API can be found on the [OS Data Hub](https://osdatahub.os.uk/docs/ofa/overview) and on the [Gitbook docs for the National Geographic Database (NGD)](https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features)
+
+- items
+    - Endpoint
+        - http://127.0.0.1:5000/catalyst/features/ngd/ofa/v1/collections/{collectionId}/items
+    - Description
+        - A basic wrapper which does little more than replicate the functionality of OS NGD API - Features
+    - Params
+        - collection (str) - the feature collection to call from. Feature collection names and details can be found at https://api.os.uk/features/ngd/ofa/v1/collections/
+        - query_params (dict, optional) - parameters to pass to the query as query parameters, supplied in a dictionary. Supported parameters are: bbox, bbox-crs, crs, datetime, filter, filter-crs, filter-lang, limit, offset
+        - filter_params (dict, optional) - OS NGD attribute filters to pass to the query within the 'filter' query_param. The can be used instead of or in addition to manually setting the filter in query_params.
+            The key-value pairs will appended using the EQUAL TO [ = ] comparator. Any other CQL Operator comparisons must be set manually in query_params.
+            Queryable attributes can be found in OS NGD codelists documentation https://docs.os.uk/osngd/code-lists/code-lists-overview, or by inserting the relevant collectionId into the https://api.os.uk/features/ngd/ofa/v1/collections/{{collectionId}}/queryables endpoint.
+        - filter_wkt (string or shapely geometry object) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a string or as a Shapely geometry object.
+            The function automatically composes the full INTERSECTS filter and adds it to the 'filter' query parameter.
+            Make sure that 'filter-crs' is set to the appropriate value.
+        - use_latest_collection (boolean, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. bld-fts-building<s>-2</s>), the latest version is used.
+            Note that if use_latest_collection but 'collection' does specify a version, the specified version is always used regardless of use_latest_collection.
+- auth_handler
+    - Endpoint
+        - http://127.0.0.1:5000/catalyst/features/ngd/ofa/v1/collections/{collectionId}/items/auth
+    - Description
+        - Enables OAuth2 authentication
+- limit_handler
+    - Endpoint
+        - http://127.0.0.1:5000/catalyst/features/ngd/ofa/v1/collections/{collectionId}/items/limit
+    - Description
+        - Enables the limit parameter to exceed 100.
