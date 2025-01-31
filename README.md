@@ -33,42 +33,41 @@ graph TD
     - Documentation for the API can be found on the [OS Data Hub](https://osdatahub.os.uk/docs/ofa/overview) and on the [Gitbook docs for the National Geographic Database (NGD)](https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/technical-specification)
 
 ## Request Specifications
-- *Path Parameters*:
+- **Path Parameters**
     - _collectionId_ (string): Any collection available from the NGD, or "multi-collection" (for when col extension applied)
-- *Query Parameters*:
-    - Parameters consistent from OS NGD API - Features items request (refer to docs above for details)
-        - key: string - OS DataHub project API Key
-        - bbox: string
-        - bbox-crs: string (xmin,ymin,xmax,ymax)
-        - datetime: string (datetime)
-        - filter: string
-        - filter-crs: string
-        - filter-lang: string
-        - limit: integer
-            - This can exceed the usual cap of 100 when the limit extension is applied.
-            - $${\color{red}!Important}$$: When used with _geom_ and/or _col_ exention, this limit applies per search area, per collection.
-            The total number of features returned could therefore be much higher.
-            - When used in conjunction with _request-limit_, the lower cap is applied.
-            - $${\color{red}Note}$$: When used with _geom_ extension, the number of features returned per geom could be lower than _limit_ in some cases.
-            This is because, if features overlap multiple search areas, duplicates are removed after the limit is reached.
-        - _offset_: integer - Not available when used with the limit extension 
-    - Additional Catalyst attributes
-        - filter_params: string (dict) - OS NGD attribute filters to pass to the query within the _filter_ query parameter. The can be used instead of or in addition to manually setting the filter in _query\_params_.
-        The key-value pairs will appended using the EQUAL TO [ = ] comparator. Any other CQL Operator comparisons must be set manually in query_params.
-        Queryable attributes can be found in OS NGD [codelists documentation](https://docs.os.uk/osngd/code-lists/code-lists-overview), or by inserting the relevant collectionId into the https://api.os.uk/features/ngd/ofa/v1/collections/{{collectionId}}/queryables endpoint.
-        - filter_wkt: string (well-knwon text) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a string or as a Shapely geometry object.
-        The function automatically composes the full INTERSECTS filter and adds it to the _filter_ query parameter.
-        Make sure that _filter-crs_ is set to the appropriate value.
-        - use-latest-collection (boolean, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. bld-fts-building<s>-2</s>), the latest version is used. If _use\_latest\_collection=True_ but the given collection does include a version, the specified version is always used regardless of use_latest_collection.
-        - request-limit: integer (default 50) - the number of OS NGD Feature requests at which to cap the Catalyst request. Consider [pricing](https://osdatahub.os.uk/plans).
-            - $${\color{red}!Important}$$: When used with _geom_ and/or _col_ exention, this limit applies per search area, per collection.
-            The total number of features returned could therefore be much higher.
-            - When used in conjunction with _limit_, the lower cap is applied.
-        - hierarchical-output: boolean, default False - If True, then results are returned in a hierarchical structure of GeoJSONs according to collection and/or search area, when the col and geom extensions are applied respectively.
-        If False, results are returned as a single GeoJSON.
-            - _geom_ and _col_ extension 
-        - _collections: string (accepts multiple values)_ - Only when col extension is used. 
-            - _col_ extension only
+- **Query Parameters consistent from OS NGD API - Features items request** (refer to docs above for details)
+    - key: string - OS DataHub project API Key
+    - bbox: string
+    - bbox-crs: string (xmin,ymin,xmax,ymax)
+    - datetime: string (datetime)
+    - filter: string
+    - filter-crs: string
+    - filter-lang: string
+    - limit: integer
+        - This can exceed the usual cap of 100 when the limit extension is applied.
+        - $${\color{red}!IMPORTANT}$$: When used with _geom_ and/or _col_ exention, this limit applies per search area, per collection.
+        The total number of features returned could therefore be much higher.
+        - When used in conjunction with _request-limit_, the lower cap is applied.
+        - $${\color{red}Note}$$: When used with _geom_ extension, the number of features returned per geom could be lower than _limit_ in some cases.
+        This is because, if features overlap multiple search areas, duplicates are removed after the limit is reached.
+    - _offset_: integer - Not available when used with the limit extension 
+- **Additional Catalyst Query Parameters**
+    - filter_params: string (dict) - OS NGD attribute filters to pass to the query within the _filter_ query parameter. The can be used instead of or in addition to manually setting the filter in _query\_params_.
+    The key-value pairs will appended using the EQUAL TO [ = ] comparator. Any other CQL Operator comparisons must be set manually in query_params.
+    Queryable attributes can be found in OS NGD [codelists documentation](https://docs.os.uk/osngd/code-lists/code-lists-overview), or by inserting the relevant collectionId into the https://api.os.uk/features/ngd/ofa/v1/collections/{{collectionId}}/queryables endpoint.
+    - filter_wkt: string (well-knwon text) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a string or as a Shapely geometry object.
+    The function automatically composes the full INTERSECTS filter and adds it to the _filter_ query parameter.
+    Make sure that _filter-crs_ is set to the appropriate value.
+    - use-latest-collection (boolean, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. "bld-fts-building<s>-2</s>"), the latest version is used. If _use\_latest\_collection=True_ but the given collection does include a version, the specified version is always used regardless of use_latest_collection.
+    - request-limit: integer (default 50) - the number of OS NGD Feature requests at which to cap the Catalyst request. Consider [pricing](https://osdatahub.os.uk/plans).
+        - $${\color{red}!INPORTANT}$$: When used with _geom_ and/or _col_ exention, this limit applies per search area, per collection.
+        The total number of features returned could therefore be much higher.
+        - When used in conjunction with _limit_, the lower cap is applied.
+    - hierarchical-output: boolean, default False - If True, then results are returned in a hierarchical structure of GeoJSONs according to collection and/or search area, when the col and geom extensions are applied respectively.
+    If False, results are returned as a single GeoJSON.
+        - _geom_ and _col_ extension 
+    - _collections_: string (accepts multiple values) - Only when col extension is used. 
+        - _col_ extension only
 
 ## Response Specifications
 - **Format**
@@ -84,13 +83,13 @@ graph TD
     - Additional Catalyst attributes
         - source: string - Note on Catalyst/Geovation/Ordnance Survey
         - numberOfReqeusts: integer - The number of NGD items requests from which the final response is compiled
-        - _numberOfRequestsByCollection: dict[str: int] (only when 'col' extension applied and hierarchical-output=False)_ - The number of NGD items requests made, split by collection
-        - _numberReturnedByCollection: dict[str: int] (only when 'col' extension applied and hierarchical-output=False)_ - The number of features returned, split by collection
+        - _numberOfRequestsByCollection_: dict[str: int] (only when 'col' extension applied and hierarchical-output=False) - The number of NGD items requests made, split by collection
+        - _numberReturnedByCollection_: dict[str: int] (only when 'col' extension applied and hierarchical-output=False) - The number of features returned, split by collection
 - **Feature-Level Attributes**
     - id: string (uuid) - OSID of the feature
     - collection: string - Collection the feature belongs to. This is an additional attribute supplied by catalyst
     - geometry: dict - List-like representation of the feature's geometry, and the geometry type
-    - _searchAreaNumber : int | list (only when 'geom' extension applied and hierarchical-output=False)_ - The number of the search area where the feature is found. If a feature intersects multiple search areas, the numbers are given in a list.
+    - _searchAreaNumber_: int | list (only when 'geom' extension applied and hierarchical-output=False) - The number of the search area where the feature is found. If a feature intersects multiple search areas, the numbers are given in a list.
     - properties: dict - Non-spatial ttribution associated with the feature
         - OS NGD attribution for each theme, collection, and feature type [here](https://docs.os.uk/osngd/data-structure)
         - The collection name is added by catalyst
