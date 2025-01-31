@@ -87,6 +87,14 @@ graph TD
             - _collections: string (accepts multiple values)_ - Only when col extension is used. 
                 - _col_ extension only
 
+|Extension|Extra Query Parameters|Description|Notes & Constaints|
+|---|---|---|---|
+|auth|||
+|limit|request-limit|Handles autentication via CatalyST|Default value of 50. This can be increased manually. When request-limit and limit are both supplied, the lower constraint is applied. When combined with geom and/or col, the limit applies per search area, per collection.|
+|geom|hierarchical-output|Extends the maximum number of features returned above the default maximum 100 by looping through multiple OS NGD API - Features requests.|When a feature overlaps with multiple search areas, it is returned once when hierarchical-output=Flalse, with searchAreaNumber returning a list. When hierarchial-output=True, the feature is repeated in the output for each search area.|
+|col|hierarchical-output, collections|An alternative means of returning OS NGD features for a search area which is a Multi-Geometry (MultiPoint, MultiLinestring, MultiPolygon, or GeometryCollection), which will in some cases improve speed, performance, and prevent the call from timing out. Each geometry is assigned a 'searchAreaNumber', and each search area is searched in turn for features, with the search area numbers returned in feature properties, and as feature metadata.|
+|_all of above_|Enables multiple OS NGD collections to be searched at once. Each collection value supplied as query parameters is searched in turn for features, with the collection returned in feature properties, and as feature metadata.|{collectionId} path parameter must be 'multi-collection'. When combined with the geom extension, requests are subdivided into collections first, and then into search areas.|
+
 - items_handler
     - Endpoint
         - http://127.0.0.1:5000/catalyst/features/ngd/ofa/v1/collections/{collectionId}/items
