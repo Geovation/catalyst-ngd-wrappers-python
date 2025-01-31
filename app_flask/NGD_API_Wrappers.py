@@ -236,6 +236,7 @@ def ngd_items_request(
 
     for feature in json_response['features']:
         feature['collection'] = collection
+        feature['properties']['collection'] = collection
 
     if add_metadata:
         json_response['source'] = "Compiled from code by Geovation from Ordnance Survey"
@@ -350,6 +351,7 @@ def multigeometry_search_extension(func: callable):
             features = area['features']
             for feature in features:
                 feature['searchAreaNumber'] = searchAreaNumber
+                feature['properties']['searchAreaNumber'] = searchAreaNumber
 
             new_features = list()
             for f in features:
