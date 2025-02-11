@@ -1,7 +1,7 @@
 import azure.functions as func
 from azure.functions import HttpResponse
 import logging
-from NGD_API_Wrappers import *
+from NGDExtensionsPkg.NGD_API_Wrappers import *
 import json
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
