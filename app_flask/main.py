@@ -2,7 +2,7 @@ import copy
 
 from flask import Flask, request
 
-from NGDExtensionsPkg.NGD_API_Wrappers import *
+from app_flask.NGD_API_Wrappers import *
 
 app = Flask(__name__)
 
