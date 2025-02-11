@@ -93,7 +93,7 @@ def delistify(params: dict):
         if k != 'collection':
             params[k] = v[0]
 
-def construct_response(req, schema_class, collection, func: callable):
+def construct_response(req, schema_class, func: callable):
     schema = schema_class()
     collection = req.route_params.get('collection')
 
@@ -118,3 +118,147 @@ def construct_response(req, schema_class, collection, func: callable):
         body=json_data,
         mimetype="application/json"
     )
+
+@app.route("catalyst/features/{collection}/items")
+def http_latest_single_col(req: HttpRequest) -> HttpResponse:
+    response = construct_response(
+        req,
+        BaseSchema,
+        items
+    )
+    return response
+
+@app.route("catalyst/features/{collection}/items/auth")
+def http_latest_single_col(req: HttpRequest) -> HttpResponse:
+    response = construct_response(
+        req,
+        BaseSchema,
+        items_auth
+    )
+    return response
+
+@app.route("catalyst/features/{collection}/items/limit")
+def http_latest_single_col(req: HttpRequest) -> HttpResponse:
+    response = construct_response(
+        req,
+        LimitSchema,
+        items_limit
+    )
+    return response
+
+@app.route("catalyst/features/{collection}/items/geom")
+def http_latest_single_col(req: HttpRequest) -> HttpResponse:
+    response = construct_response(
+        req,
+        GeomSchema,
+        items_geom
+    )
+    return response
+
+@app.route("catalyst/features/{collection}/items/col")
+def http_latest_single_col(req: HttpRequest) -> HttpResponse:
+    response = construct_response(
+        req,
+        ColSchema,
+        items_col
+    )
+    return response
+
+@app.route("catalyst/features/{collection}/items/limit-geom")
+def http_latest_single_col(req: HttpRequest) -> HttpResponse:
+    response = construct_response(
+        req,
+        LimitGeomSchema,
+        items_limit_geom
+    )
+    return response
+
+@app.route("catalyst/features/{collection}/items/limit-col")
+def http_latest_single_col(req: HttpRequest) -> HttpResponse:
+    response = construct_response(
+        req,
+        LimitColSchema,
+        items_limit_col
+    )
+    return response
+
+@app.route("catalyst/features/{collection}/items/geom-col")
+def http_latest_single_col(req: HttpRequest) -> HttpResponse:
+    response = construct_response(
+        req,
+        GeomColSchema,
+        items_geom_col
+    )
+    return response
+
+@app.route("catalyst/features/{collection}/items/limit-geom-col")
+def http_latest_single_col(req: HttpRequest) -> HttpResponse:
+    response = construct_response(
+        req,
+        LimitGeomColSchema,
+        items_limit_geom_col
+    )
+    return response
+
+@app.route("catalyst/features/{collection}/items/auth-limit")
+def http_latest_single_col(req: HttpRequest) -> HttpResponse:
+    response = construct_response(
+        req,
+        LimitSchema,
+        items_auth_limit
+    )
+    return response
+
+@app.route("catalyst/features/{collection}/items/auth-geom")
+def http_latest_single_col(req: HttpRequest) -> HttpResponse:
+    response = construct_response(
+        req,
+        GeomSchema,
+        items_auth_geom
+    )
+    return response
+
+@app.route("catalyst/features/{collection}/items/auth-col")
+def http_latest_single_col(req: HttpRequest) -> HttpResponse:
+    response = construct_response(
+        req,
+        ColSchema,
+        items_auth_col
+    )
+    return response
+
+@app.route("catalyst/features/{collection}/items/auth-limit-geom")
+def http_latest_single_col(req: HttpRequest) -> HttpResponse:
+    response = construct_response(
+        req,
+        LimitGeomSchema,
+        items_auth_limit_geom
+    )
+    return response
+
+@app.route("catalyst/features/{collection}/items/auth-limit-col")
+def http_latest_single_col(req: HttpRequest) -> HttpResponse:
+    response = construct_response(
+        req,
+        LimitColSchema,
+        items_auth_limit_col
+    )
+    return response
+
+@app.route("catalyst/features/{collection}/items/auth-geom-col")
+def http_latest_single_col(req: HttpRequest) -> HttpResponse:
+    response = construct_response(
+        req,
+        GeomColSchema,
+        items_auth_geom_col
+    )
+    return response
+
+@app.route("catalyst/features/{collection}/items/auth-limit-geom-col")
+def http_latest_single_col(req: HttpRequest) -> HttpResponse:
+    response = construct_response(
+        req,
+        LimitGeomColSchema,
+        items_auth_limit_geom_col
+    )
+    return response
