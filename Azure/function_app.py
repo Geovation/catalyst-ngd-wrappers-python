@@ -94,31 +94,43 @@ def delistify(params: dict):
             params[k] = v[0]
 
 def construct_response(req, schema_class, func: callable):
-    schema = schema_class()
-    collection = req.route_params.get('collection')
+    try:
+        schema = schema_class()
+        collection = req.route_params.get('collection')
 
-    params = {**req.params}
-    if not(collection):
-        params['collection'] = params['collection'].split(',')
-    parsed_params = schema.load(params)
+        params = {**req.params}
+        if not(collection):
+            params['collection'] = params['collection'].split(',')
+        parsed_params = schema.load(params)
 
-    custom_params = {
-        k: parsed_params.pop(k)
-        for k in schema.fields.keys()
-        if k in parsed_params
-    }
-    if collection:
-        custom_params['collection'] = collection
-    data = func(
-        query_params = parsed_params,
-        **custom_params
-    )
-    json_data = json.dumps(data)
+        custom_params = {
+            k: parsed_params.pop(k)
+            for k in schema.fields.keys()
+            if k in parsed_params
+        }
+        if collection:
+            custom_params['collection'] = collection
+        
+        data = func(
+            query_params=parsed_params,
+            **custom_params
+        )
+        json_data = json.dumps(data)
 
-    return HttpResponse(
-        body=json_data,
-        mimetype="application/json"
-    )
+        return HttpResponse(
+            body=json_data,
+            mimetype="application/json"
+        )
+    except Exception as e:
+        error_response = {
+            "error": str(e),
+            "status": 500  # You might want to make this dynamic based on the error type
+        }
+        return HttpResponse(
+            body=json.dumps(error_response),
+            mimetype="application/json",
+            status_code=500
+        )
 
 @app.route("catalyst/features/{collection}/items")
 def one(req: HttpRequest) -> HttpResponse:
