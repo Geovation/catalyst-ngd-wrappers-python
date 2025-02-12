@@ -9,3 +9,4 @@ __azurite_db_table__.json
 .venv
 __blobstorage__
 __queuestorage__
+.vscode
