@@ -133,7 +133,7 @@ def construct_response(req, schema_class, func: callable):
         )
 
 @app.route("catalyst/features/{collection}/items")
-def one(req: HttpRequest) -> HttpResponse:
+def base(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,
         BaseSchema,
@@ -142,7 +142,7 @@ def one(req: HttpRequest) -> HttpResponse:
     return response
 
 @app.route("catalyst/features/{collection}/items/auth")
-def two(req: HttpRequest) -> HttpResponse:
+def auth(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,
         BaseSchema,
@@ -151,7 +151,7 @@ def two(req: HttpRequest) -> HttpResponse:
     return response
 
 @app.route("catalyst/features/{collection}/items/limit")
-def three(req: HttpRequest) -> HttpResponse:
+def limit(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,
         LimitSchema,
@@ -160,7 +160,7 @@ def three(req: HttpRequest) -> HttpResponse:
     return response
 
 @app.route("catalyst/features/{collection}/items/geom")
-def four(req: HttpRequest) -> HttpResponse:
+def geom(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,
         GeomSchema,
@@ -169,7 +169,7 @@ def four(req: HttpRequest) -> HttpResponse:
     return response
 
 @app.route("catalyst/features/multi-collections/items/col")
-def five(req: HttpRequest) -> HttpResponse:
+def col(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,
         ColSchema,
@@ -178,7 +178,7 @@ def five(req: HttpRequest) -> HttpResponse:
     return response
 
 @app.route("catalyst/features/{collection}/items/limit-geom")
-def six(req: HttpRequest) -> HttpResponse:
+def limit_geom(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,
         LimitGeomSchema,
@@ -187,7 +187,7 @@ def six(req: HttpRequest) -> HttpResponse:
     return response
 
 @app.route("catalyst/features/multi-collections/items/limit-col")
-def seven(req: HttpRequest) -> HttpResponse:
+def limit_col(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,
         LimitColSchema,
@@ -196,7 +196,7 @@ def seven(req: HttpRequest) -> HttpResponse:
     return response
 
 @app.route("catalyst/features/multi-collections/items/geom-col")
-def eight(req: HttpRequest) -> HttpResponse:
+def geom_col(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,
         GeomColSchema,
@@ -205,7 +205,7 @@ def eight(req: HttpRequest) -> HttpResponse:
     return response
 
 @app.route("catalyst/features/multi-collections/items/limit-geom-col")
-def nine(req: HttpRequest) -> HttpResponse:
+def limit_geom_col(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,
         LimitGeomColSchema,
@@ -214,7 +214,7 @@ def nine(req: HttpRequest) -> HttpResponse:
     return response
 
 @app.route("catalyst/features/{collection}/items/auth-limit")
-def ten(req: HttpRequest) -> HttpResponse:
+def auth_limit(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,
         LimitSchema,
@@ -223,7 +223,7 @@ def ten(req: HttpRequest) -> HttpResponse:
     return response
 
 @app.route("catalyst/features/{collection}/items/auth-geom")
-def eleven(req: HttpRequest) -> HttpResponse:
+def auth_geom(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,
         GeomSchema,
@@ -232,7 +232,7 @@ def eleven(req: HttpRequest) -> HttpResponse:
     return response
 
 @app.route("catalyst/features/multi-collections/items/auth-col")
-def twelve(req: HttpRequest) -> HttpResponse:
+def auth_col(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,
         ColSchema,
@@ -241,7 +241,7 @@ def twelve(req: HttpRequest) -> HttpResponse:
     return response
 
 @app.route("catalyst/features/{collection}/items/auth-limit-geom")
-def thirteen(req: HttpRequest) -> HttpResponse:
+def auth_limit_geom(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,
         LimitGeomSchema,
@@ -250,7 +250,7 @@ def thirteen(req: HttpRequest) -> HttpResponse:
     return response
 
 @app.route("catalyst/features/multi-collections/items/auth-limit-col")
-def fourteen(req: HttpRequest) -> HttpResponse:
+def auth_geom_col(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,
         LimitColSchema,
@@ -259,7 +259,7 @@ def fourteen(req: HttpRequest) -> HttpResponse:
     return response
 
 @app.route("catalyst/features/multi-collections/items/auth-geom-col")
-def fifteen(req: HttpRequest) -> HttpResponse:
+def auth_geom_col(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,
         GeomColSchema,
@@ -268,7 +268,7 @@ def fifteen(req: HttpRequest) -> HttpResponse:
     return response
 
 @app.route("catalyst/features/multi-collections/items/auth-limit-geom-col")
-def sixteen(req: HttpRequest) -> HttpResponse:
+def auth_limit_geom_col(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,
         LimitGeomColSchema,
