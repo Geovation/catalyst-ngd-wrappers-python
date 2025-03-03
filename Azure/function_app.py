@@ -71,7 +71,12 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
     params = {**req.params}
     parsed_params = schema.load(params)
 
-    return get_latest_collection_versions(**parsed_params)
+    data = get_latest_collection_versions(**parsed_params)
+    json_data = json.dumps(data)
+    return HttpResponse(
+        body=json_data,
+        mimetype="application/json"
+    )
 
 @app.function_name('http_latest_single_col')
 @app.route("catalyst/features/latest-collections/{collection}")
@@ -101,6 +106,7 @@ def construct_response(req, schema_class, func: callable):
         collection = req.route_params.get('collection')
 
         params = {**req.params}
+
         if not(collection):
             params['collection'] = params['collection'].split(',')
         parsed_params = schema.load(params)
@@ -112,9 +118,11 @@ def construct_response(req, schema_class, func: callable):
         }
         if collection:
             custom_params['collection'] = collection
-        
+
+        headers = req.headers.__dict__.get('__http_headers__')
         data = func(
             query_params=parsed_params,
+            headers=headers,
             **custom_params
         )
         json_data = json.dumps(data)
@@ -224,7 +232,7 @@ def http_limit_geom_col(req: HttpRequest) -> HttpResponse:
     )
     return response
 
-@app.function_name('http_auth_base')
+@app.function_name('http_auth_limit')
 @app.route("catalyst/features/{collection}/items/auth-limit")
 def http_auth_limit(req: HttpRequest) -> HttpResponse:
     response = construct_response(

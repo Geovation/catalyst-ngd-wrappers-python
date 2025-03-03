@@ -179,9 +179,8 @@ def ngd_items_request(
     filter_params: dict = {},
     filter_wkt = None,
     use_latest_collection: bool = False,
-    headers: dict = {},
-    access_token: str = None,
     add_metadata: bool = True,
+    headers: dict = {},
     **kwargs
 ) -> dict:
     """
@@ -209,7 +208,6 @@ def ngd_items_request(
     kwargs.pop('hierarchical_output', None)
     query_params_ = query_params.copy()
     filter_params_ = filter_params.copy()
-    headers_ = headers.copy()
 
     if use_latest_collection:
         collection = get_specific_latest_collections([collection], flag_recent_updates=False).get(collection)
@@ -226,9 +224,12 @@ def ngd_items_request(
 
     query_params_string = construct_query_params(**query_params_)
     url = f'https://api.os.uk/features/ngd/ofa/v1/collections/{collection}/items/{query_params_string}'
-    if access_token:
-        headers_['Authorization'] = f"Bearer {access_token}"
-    response = r.get(url, headers=headers_, **kwargs)
+    headers.pop('host') # Remove host header as this is automatically added by the requests library and can cause issues
+    response = r.get(
+        url,
+        headers=headers,
+        **kwargs
+    )
     json_response = response.json()
 
     if response.status_code >= 400:
