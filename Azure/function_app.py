@@ -71,7 +71,12 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
     params = {**req.params}
     parsed_params = schema.load(params)
 
-    return get_latest_collection_versions(**parsed_params)
+    data = get_latest_collection_versions(**parsed_params)
+    json_data = json.dumps(data)
+    return HttpResponse(
+        body=json_data,
+        mimetype="application/json"
+    )
 
 @app.function_name('http_latest_single_col')
 @app.route("catalyst/features/latest-collections/{collection}")
