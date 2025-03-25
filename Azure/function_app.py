@@ -6,12 +6,15 @@ import json
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
-from marshmallow import Schema, INCLUDE
+from marshmallow import Schema, INCLUDE, EXCLUDE
 from marshmallow.fields import Integer, String, Boolean, List
 
 class LatestCollectionsSchema(Schema):
     flag_recent_updates = Boolean(required=False, data_key='flag-recent-updates')
-    recent_update_days = Integer(required=False, data_key='recent_update_days')
+    recent_update_days = Integer(required=False, data_key='recent-update-days')
+
+    class Meta:
+        unknown = EXCLUDE
 
 class BaseSchema(Schema):
     filter_wkt = String(required=False, data_key='filter-wkt')
@@ -28,7 +31,7 @@ class GeomSchema(BaseSchema):
     hierarchical_output = Boolean(required=False, data_key='hierarchical-output')
 
 class ColSchema(GeomSchema):
-    collections = List(String(), required=True, data_key='collection')
+    collection = List(String(), required=True, data_key='collection')
 
 class LimitGeomSchema(LimitSchema, GeomSchema):
     """Combining Limit and Geom schemas"""
@@ -69,7 +72,18 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
     schema = LatestCollectionsSchema()
 
     params = {**req.params}
-    parsed_params = schema.load(params)
+    try:
+        parsed_params = schema.load(params)
+    except Exception as e:
+        return HttpResponse(
+            body=json.dumps({
+                "code": 400,
+                "description": e,
+                "errorSource": "Catalyst Wrapper"
+            }),
+            mimetype="application/json",
+            status_code=400
+        )
 
     data = get_latest_collection_versions(**parsed_params)
     json_data = json.dumps(data)
@@ -85,7 +99,18 @@ def http_latest_single_col(req: HttpRequest) -> HttpResponse:
     collection = req.route_params.get('collection')
 
     params = {**req.params}
-    parsed_params = schema.load(params)
+    try:
+        parsed_params = schema.load(params)
+    except Exception as e:
+        return HttpResponse(
+            body=json.dumps({
+                "code": 400,
+                "description": e,
+                "errorSource": "Catalyst Wrapper"
+            }),
+            mimetype="application/json",
+            status_code=400
+        )
 
     data = get_specific_latest_collections([collection], **parsed_params)
     json_data = json.dumps(data)
@@ -108,8 +133,22 @@ def construct_response(req, schema_class, func: callable):
         params = {**req.params}
 
         if not(collection):
-            params['collection'] = params['collection'].split(',')
-        parsed_params = schema.load(params)
+            col = params.get('collection')
+            if col:
+                params['collection'] = params.get('collection').split(',')
+
+        try:
+            parsed_params = schema.load(params)
+        except Exception as e:
+            return HttpResponse(
+                body=json.dumps({
+                    "code": 400,
+                    "description": str(e),
+                    "errorSource": "Catalyst Wrapper"
+                }),
+                mimetype="application/json",
+                status_code=400
+            )
 
         custom_params = {
             k: parsed_params.pop(k)
@@ -125,6 +164,11 @@ def construct_response(req, schema_class, func: callable):
             headers=headers,
             **custom_params
         )
+        descr = data.get('description')
+        if data.get('errorSource') and descr:
+            fields = [x.replace('_','-') for x in schema.fields]
+            attributes = ', '.join(fields)
+            data['description'] = descr.format(attr=attributes)
         json_data = json.dumps(data)
 
         return HttpResponse(
@@ -183,7 +227,7 @@ def http_geom(req: HttpRequest) -> HttpResponse:
     return response
 
 @app.function_name('http_col')
-@app.route("catalyst/features/multi-collections/items/col")
+@app.route("catalyst/features/multi-collection/items/col")
 def http_col(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,
@@ -203,7 +247,7 @@ def http_limit_geom(req: HttpRequest) -> HttpResponse:
     return response
 
 @app.function_name('http_limit_col')
-@app.route("catalyst/features/multi-collections/items/limit-col")
+@app.route("catalyst/features/multi-collection/items/limit-col")
 def http_limit_col(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,
@@ -213,7 +257,7 @@ def http_limit_col(req: HttpRequest) -> HttpResponse:
     return response
 
 @app.function_name('http_geom_col')
-@app.route("catalyst/features/multi-collections/items/geom-col")
+@app.route("catalyst/features/multi-collection/items/geom-col")
 def http_geom_col(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,
@@ -223,7 +267,7 @@ def http_geom_col(req: HttpRequest) -> HttpResponse:
     return response
 
 @app.function_name('http_limit_geom_col')
-@app.route("catalyst/features/multi-collections/items/limit-geom-col")
+@app.route("catalyst/features/multi-collection/items/limit-geom-col")
 def http_limit_geom_col(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,
@@ -253,7 +297,7 @@ def http_auth_geom(req: HttpRequest) -> HttpResponse:
     return response
 
 @app.function_name('http_auth_col')
-@app.route("catalyst/features/multi-collections/items/auth-col")
+@app.route("catalyst/features/multi-collection/items/auth-col")
 def http_auth_col(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,
@@ -273,7 +317,7 @@ def http_auth_limit_geom(req: HttpRequest) -> HttpResponse:
     return response
 
 @app.function_name('http_auth_limit_col')
-@app.route("catalyst/features/multi-collections/items/auth-limit-col")
+@app.route("catalyst/features/multi-collection/items/auth-limit-col")
 def http_auth_geom_col(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,
@@ -282,7 +326,7 @@ def http_auth_geom_col(req: HttpRequest) -> HttpResponse:
     )
     return response
 
-@app.route("catalyst/features/multi-collections/items/auth-geom-col")
+@app.route("catalyst/features/multi-collection/items/auth-geom-col")
 def http_auth_geom_col(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,
@@ -292,7 +336,7 @@ def http_auth_geom_col(req: HttpRequest) -> HttpResponse:
     return response
 
 @app.function_name('http_auth_limit_geom_col')
-@app.route("catalyst/features/multi-collections/items/auth-limit-geom-col")
+@app.route("catalyst/features/multi-collection/items/auth-limit-geom-col")
 def http_auth_limit_geom_col(req: HttpRequest) -> HttpResponse:
     response = construct_response(
         req,

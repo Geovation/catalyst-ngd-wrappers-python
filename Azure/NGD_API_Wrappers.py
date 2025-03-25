@@ -44,7 +44,7 @@ def get_latest_collection_versions(flag_recent_updates: bool = True, recent_upda
 
     return output_lookup, recent_collections
 
-def get_specific_latest_collections(collections: list[str], **kwargs) -> str:
+def get_specific_latest_collections(collection: list[str], **kwargs) -> str:
     '''
     Returns the latest collection(s) from the base name of given collection(s).
     Input must be a list in the format theme-collection-featuretype (eg. bld-fts-buildingline)
@@ -52,7 +52,7 @@ def get_specific_latest_collections(collections: list[str], **kwargs) -> str:
     More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
     '''
     latest_collections = get_latest_collection_versions(**kwargs)[0]
-    specific_latest_collections = {col: latest_collections.get(col, col) for col in collections}
+    specific_latest_collections = {col: latest_collections.get(col, col) for col in collection}
     return specific_latest_collections
 
 def get_access_token(client_id: str, client_secret: str) -> str:
@@ -224,7 +224,8 @@ def ngd_items_request(
 
     query_params_string = construct_query_params(**query_params_)
     url = f'https://api.os.uk/features/ngd/ofa/v1/collections/{collection}/items/{query_params_string}'
-    headers.pop('host') # Remove host header as this is automatically added by the requests library and can cause issues
+
+    headers.pop('host', None) # Remove host header as this is automatically added by the requests library and can cause issues
     response = r.get(
         url,
         headers=headers,
@@ -233,7 +234,13 @@ def ngd_items_request(
     json_response = response.json()
 
     if response.status_code >= 400:
-        raise Exception(json_response)
+        json_response['errorSource'] = 'OS NGD API'
+        descr = json_response.get('description')
+        if descr.startswith('Not supported query parameter'):
+            descr = descr.replace('Supported parameters are', 'Supported NGD parameters are')
+            descr += '. Additional supported Catalyst parameters for this function are: {attr}.'
+            json_response['description'] = descr
+        return json_response
 
     for feature in json_response['features']:
         feature['collection'] = collection
@@ -393,19 +400,35 @@ def multigeometry_search_extension(func: callable):
 
 def multiple_collections_extension(func: callable) -> dict:
 
-    def wrapper(collections: list[str], hierarchical_output: bool=False, use_latest_collection: bool=False, *args, **kwargs):
+    def wrapper(
+        collection: list[str],
+        hierarchical_output: bool=False,
+        use_latest_collection: bool=False,
+        *args,
+        **kwargs
+    ):
 
         if use_latest_collection:
-            collections = get_specific_latest_collections(collections).values()
+            collection = get_specific_latest_collections(collection).values()
 
         results = dict()
-        for col in collections:
-            json_response = func(*args, collection=col, hierarchical_output=hierarchical_output, **kwargs)
+        for col in collection:
+            json_response = func(
+                *args,
+                collection=col,
+                hierarchical_output=hierarchical_output,
+                **kwargs
+            )
+            code = json_response.get('code', 200)
+            if code == 404 and 'is not a supported Collection' in json_response.get('description'):
+                return json_response
+            if code >= 400:
+                return json_response
             results[col] = json_response
 
         if hierarchical_output:
             return results
-    
+
         geojson = {
             'type': 'FeatureCollection',
             'source': 'Compiled from code by Geovation from Ordnance Survey',
@@ -418,7 +441,6 @@ def multiple_collections_extension(func: callable) -> dict:
 
         for col, col_results in results.items():
 
-            col_results.pop('timeStamp')
             features = col_results['features']
             geojson['features'] += features
             numberOfRequests = col_results.pop('numberOfRequests')
