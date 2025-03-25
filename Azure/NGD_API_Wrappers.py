@@ -44,7 +44,7 @@ def get_latest_collection_versions(flag_recent_updates: bool = True, recent_upda
 
     return output_lookup, recent_collections
 
-def get_specific_latest_collections(collections: list[str], **kwargs) -> str:
+def get_specific_latest_collections(collection: list[str], **kwargs) -> str:
     '''
     Returns the latest collection(s) from the base name of given collection(s).
     Input must be a list in the format theme-collection-featuretype (eg. bld-fts-buildingline)
@@ -52,7 +52,7 @@ def get_specific_latest_collections(collections: list[str], **kwargs) -> str:
     More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
     '''
     latest_collections = get_latest_collection_versions(**kwargs)[0]
-    specific_latest_collections = {col: latest_collections.get(col, col) for col in collections}
+    specific_latest_collections = {col: latest_collections.get(col, col) for col in collection}
     return specific_latest_collections
 
 def get_access_token(client_id: str, client_secret: str) -> str:
@@ -177,7 +177,7 @@ def ngd_items_request(
     collection: str,
     query_params: dict = {},
     filter_params: dict = {},
-    filter_wkt = None,
+    wkt= None,
     use_latest_collection: bool = False,
     add_metadata: bool = True,
     headers: dict = {},
@@ -193,7 +193,7 @@ def ngd_items_request(
         filter_params (dict, optional) - OS NGD attribute filters to pass to the query within the 'filter' query_param. The can be used instead of or in addition to manually setting the filter in query_params.
             The key-value pairs will appended using the EQUAL TO [ = ] comparator. Any other CQL Operator comparisons must be set manually in query_params.
             Queryable attributes can be found in OS NGD codelists documentation https://docs.os.uk/osngd/code-lists/code-lists-overview, or by inserting the relevant collectionId into the https://api.os.uk/features/ngd/ofa/v1/collections/{{collectionId}}/queryables endpoint.
-        filter_wkt (string or shapely geometry object) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a string or as a Shapely geometry object.
+        wkt (string or shapely geometry object) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a string or as a Shapely geometry object.
             The function automatically composes the full INTERSECTS filter and adds it to the 'filter' query parameter.
             Make sure that 'filter-crs' is set to the appropriate value.
         use_latest_collection (boolean, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. bld-fts-building[-2]), the latest version is used.
@@ -217,14 +217,15 @@ def ngd_items_request(
         current_filters = query_params_.get('filter')
         query_params_['filter'] = f'({current_filters})and{filters}' if current_filters else filters
 
-    if filter_wkt:
-        spatial_filter = wkt_to_spatial_filter(filter_wkt)
+    if wkt:
+        spatial_filter = wkt_to_spatial_filter(wkt)
         current_filters = query_params_.get('filter')
         query_params_['filter'] = f'({current_filters})and{spatial_filter}' if current_filters else spatial_filter
 
     query_params_string = construct_query_params(**query_params_)
     url = f'https://api.os.uk/features/ngd/ofa/v1/collections/{collection}/items/{query_params_string}'
-    headers.pop('host') # Remove host header as this is automatically added by the requests library and can cause issues
+
+    headers.pop('host', None) # Remove host header as this is automatically added by the requests library and can cause issues
     response = r.get(
         url,
         headers=headers,
@@ -233,7 +234,13 @@ def ngd_items_request(
     json_response = response.json()
 
     if response.status_code >= 400:
-        raise Exception(json_response)
+        json_response['errorSource'] = 'OS NGD API'
+        descr = json_response.get('description')
+        if descr.startswith('Not supported query parameter'):
+            descr = descr.replace('Supported parameters are', 'Supported NGD parameters are')
+            descr += '. Additional supported Catalyst parameters for this function are: {attr}.'
+            json_response['description'] = descr
+        return json_response
 
     for feature in json_response['features']:
         feature['collection'] = collection
@@ -258,7 +265,11 @@ def limit_extension(func: callable):
         query_params_ = query_params.copy()
 
         if 'offset' in query_params_:
-            raise AttributeError('offset is not a valid argument for functions using this decorator.')
+            return {
+                "code": 400,
+                "description": "'offset' is not a valid attribute for functions using this Catalyst wrapper.",
+                "errorSource": "OS NGD API"
+            }
 
         items = list()
 
@@ -276,7 +287,14 @@ def limit_extension(func: callable):
                 query_params_['limit'] = final_batchsize
             query_params_['offset'] = offset
 
-            json_response = func(*args, query_params=query_params_, add_metadata = False, **kwargs)
+            json_response = func(
+                *args,
+                query_params=query_params_,
+                add_metadata = False,
+                **kwargs
+            )
+            if json_response.get('code') and json_response['code'] >= 400:
+                return json_response
             request_count += 1
             items += json_response['features']
 
@@ -316,16 +334,23 @@ def limit_extension(func: callable):
 
 def multigeometry_search_extension(func: callable):
 
-    def wrapper(*args, filter_wkt: str, hierarchical_output: bool=False, **kwargs):
+    def wrapper(
+        *args,
+        wkt: str,
+        hierarchical_output: bool = False,
+        **kwargs
+    ):
 
-        full_geom = from_wkt(filter_wkt) if type(filter_wkt) == str else filter_wkt
+        full_geom = from_wkt(wkt) if type(wkt) == str else wkt
         search_areas = list()
 
         is_single_geom = type(full_geom) in [Point, LineString, Polygon]
         partial_geoms = [full_geom] if is_single_geom else full_geom.geoms
 
         for search_area, geom in enumerate(partial_geoms):
-            json_response = func(*args, filter_wkt=geom, **kwargs)
+            json_response = func(*args, wkt=geom, **kwargs)
+            if json_response.get('code') and json_response['code'] >= 400:
+                return json_response
             json_response['searchAreaNumber'] = search_area
             search_areas.append(json_response)
 
@@ -393,19 +418,35 @@ def multigeometry_search_extension(func: callable):
 
 def multiple_collections_extension(func: callable) -> dict:
 
-    def wrapper(collections: list[str], hierarchical_output: bool=False, use_latest_collection: bool=False, *args, **kwargs):
+    def wrapper(
+        collection: list[str],
+        hierarchical_output: bool=False,
+        use_latest_collection: bool=False,
+        *args,
+        **kwargs
+    ):
 
         if use_latest_collection:
-            collections = get_specific_latest_collections(collections).values()
+            collection = get_specific_latest_collections(collection).values()
 
         results = dict()
-        for col in collections:
-            json_response = func(*args, collection=col, hierarchical_output=hierarchical_output, **kwargs)
+        for col in collection:
+            json_response = func(
+                *args,
+                collection=col,
+                hierarchical_output=hierarchical_output,
+                **kwargs
+            )
+            code = json_response.get('code', 200)
+            if code == 404 and 'is not a supported Collection' in json_response.get('description'):
+                return json_response
+            if code >= 400:
+                return json_response
             results[col] = json_response
 
         if hierarchical_output:
             return results
-    
+
         geojson = {
             'type': 'FeatureCollection',
             'source': 'Compiled from code by Geovation from Ordnance Survey',
@@ -418,7 +459,6 @@ def multiple_collections_extension(func: callable) -> dict:
 
         for col, col_results in results.items():
 
-            col_results.pop('timeStamp')
             features = col_results['features']
             geojson['features'] += features
             numberOfRequests = col_results.pop('numberOfRequests')
