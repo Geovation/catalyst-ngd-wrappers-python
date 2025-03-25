@@ -177,7 +177,7 @@ def ngd_items_request(
     collection: str,
     query_params: dict = {},
     filter_params: dict = {},
-    filter_wkt = None,
+    wkt= None,
     use_latest_collection: bool = False,
     add_metadata: bool = True,
     headers: dict = {},
@@ -193,7 +193,7 @@ def ngd_items_request(
         filter_params (dict, optional) - OS NGD attribute filters to pass to the query within the 'filter' query_param. The can be used instead of or in addition to manually setting the filter in query_params.
             The key-value pairs will appended using the EQUAL TO [ = ] comparator. Any other CQL Operator comparisons must be set manually in query_params.
             Queryable attributes can be found in OS NGD codelists documentation https://docs.os.uk/osngd/code-lists/code-lists-overview, or by inserting the relevant collectionId into the https://api.os.uk/features/ngd/ofa/v1/collections/{{collectionId}}/queryables endpoint.
-        filter_wkt (string or shapely geometry object) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a string or as a Shapely geometry object.
+        wkt (string or shapely geometry object) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a string or as a Shapely geometry object.
             The function automatically composes the full INTERSECTS filter and adds it to the 'filter' query parameter.
             Make sure that 'filter-crs' is set to the appropriate value.
         use_latest_collection (boolean, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. bld-fts-building[-2]), the latest version is used.
@@ -217,8 +217,8 @@ def ngd_items_request(
         current_filters = query_params_.get('filter')
         query_params_['filter'] = f'({current_filters})and{filters}' if current_filters else filters
 
-    if filter_wkt:
-        spatial_filter = wkt_to_spatial_filter(filter_wkt)
+    if wkt:
+        spatial_filter = wkt_to_spatial_filter(wkt)
         current_filters = query_params_.get('filter')
         query_params_['filter'] = f'({current_filters})and{spatial_filter}' if current_filters else spatial_filter
 
@@ -265,7 +265,11 @@ def limit_extension(func: callable):
         query_params_ = query_params.copy()
 
         if 'offset' in query_params_:
-            raise AttributeError('offset is not a valid argument for functions using this decorator.')
+            return {
+                "code": 400,
+                "description": "'offset' is not a valid attribute for functions using this Catalyst wrapper.",
+                "errorSource": "OS NGD API"
+            }
 
         items = list()
 
@@ -283,7 +287,14 @@ def limit_extension(func: callable):
                 query_params_['limit'] = final_batchsize
             query_params_['offset'] = offset
 
-            json_response = func(*args, query_params=query_params_, add_metadata = False, **kwargs)
+            json_response = func(
+                *args,
+                query_params=query_params_,
+                add_metadata = False,
+                **kwargs
+            )
+            if json_response.get('code') and json_response['code'] >= 400:
+                return json_response
             request_count += 1
             items += json_response['features']
 
@@ -323,16 +334,23 @@ def limit_extension(func: callable):
 
 def multigeometry_search_extension(func: callable):
 
-    def wrapper(*args, filter_wkt: str, hierarchical_output: bool=False, **kwargs):
+    def wrapper(
+        *args,
+        wkt: str,
+        hierarchical_output: bool = False,
+        **kwargs
+    ):
 
-        full_geom = from_wkt(filter_wkt) if type(filter_wkt) == str else filter_wkt
+        full_geom = from_wkt(wkt) if type(wkt) == str else wkt
         search_areas = list()
 
         is_single_geom = type(full_geom) in [Point, LineString, Polygon]
         partial_geoms = [full_geom] if is_single_geom else full_geom.geoms
 
         for search_area, geom in enumerate(partial_geoms):
-            json_response = func(*args, filter_wkt=geom, **kwargs)
+            json_response = func(*args, wkt=geom, **kwargs)
+            if json_response.get('code') and json_response['code'] >= 400:
+                return json_response
             json_response['searchAreaNumber'] = search_area
             search_areas.append(json_response)
 

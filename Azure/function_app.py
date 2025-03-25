@@ -10,40 +10,43 @@ from marshmallow import Schema, INCLUDE, EXCLUDE
 from marshmallow.fields import Integer, String, Boolean, List
 
 class LatestCollectionsSchema(Schema):
-    flag_recent_updates = Boolean(required=False, data_key='flag-recent-updates')
-    recent_update_days = Integer(required=False, data_key='recent-update-days')
+    flag_recent_updates = Boolean(data_key='flag-recent-updates', required=False)
+    recent_update_days = Integer(data_key='recent-update-days', required=False)
 
     class Meta:
         unknown = EXCLUDE
 
 class BaseSchema(Schema):
-    filter_wkt = String(required=False, data_key='filter-wkt')
-    use_latest_collection = Boolean(required=False, data_key='use-latest-collection')
+    wkt = String(data_key='wkt', required=False)
+    use_latest_collection = Boolean(data_key='use-latest-collection',required=False)
 
     class Meta:
         unknown = INCLUDE  # Allows additional fields to pass through to query_params
+
+class AbstractHierarchicalSchema(BaseSchema):
+    hierarchical_output = Boolean(data_key='hierarchical-output', required=False)
 
 class LimitSchema(BaseSchema):
     limit = Integer(data_key='limit', required=False)
     request_limit = Integer(data_key='request-limit', required=False)
 
-class GeomSchema(BaseSchema):
-    hierarchical_output = Boolean(required=False, data_key='hierarchical-output')
+class GeomSchema(AbstractHierarchicalSchema):
+    wkt = String(data_key='wkt', required=True)
 
-class ColSchema(GeomSchema):
-    collection = List(String(), required=True, data_key='collection')
+class ColSchema(AbstractHierarchicalSchema):
+    collection = List(String(), data_key='collection', required=True)
 
 class LimitGeomSchema(LimitSchema, GeomSchema):
-    """Combining Limit and Geom schemas"""
+    wkt = String(data_key='wkt', required=True)
 
 class LimitColSchema(LimitSchema, ColSchema):
     """Combining Limit and Col schemas"""
 
-class GeomColSchema(ColSchema):
-    """Combining Geom and Col schemas"""
+class GeomColSchema(GeomSchema, ColSchema):
+    wkt = String(data_key='wkt', required=True)
 
-class LimitGeomColSchema(LimitSchema, ColSchema):
-    """Combining Limit, Geom, and Col schemas"""
+class LimitGeomColSchema(LimitSchema, GeomSchema, ColSchema):
+    wkt = String(data_key='wkt', required=True)
 
 @app.route(route="http_trigger")
 def http_trigger(req: HttpRequest) -> HttpResponse:
@@ -78,7 +81,7 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
         return HttpResponse(
             body=json.dumps({
                 "code": 400,
-                "description": e,
+                "description": str(e),
                 "errorSource": "Catalyst Wrapper"
             }),
             mimetype="application/json",
@@ -105,7 +108,7 @@ def http_latest_single_col(req: HttpRequest) -> HttpResponse:
         return HttpResponse(
             body=json.dumps({
                 "code": 400,
-                "description": e,
+                "description": str(e),
                 "errorSource": "Catalyst Wrapper"
             }),
             mimetype="application/json",
