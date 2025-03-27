@@ -51,11 +51,13 @@ def get_latest_collection_versions(flag_recent_updates: bool = True, recent_upda
             recent_collections.append(collection)
             logging.warning(f'{collection} is a recent version/update from the last {recent_update_days} days.')
    
-    output_lookup = {'collection-lookup': output_lookup}
-    recent_update_days = {'recent-update-threshold-days': recent_update_days}
-    recent_collections = {'recent-collection-updates': recent_collections}
+    full_output = {
+        'collection-lookup': output_lookup,
+        'recent-update-threshold-days': recent_update_days,
+        'recent-collection-updates': recent_collections
+    }
 
-    return output_lookup, recent_update_days, recent_collections
+    return full_output
 
 def get_specific_latest_collections(collection: list[str], **kwargs) -> str:
     '''
@@ -64,8 +66,16 @@ def get_specific_latest_collections(collection: list[str], **kwargs) -> str:
     Output will supply a dictionary completing the full name of the feature collections by appending the latest version number (eg. bld-fts-buildingline-2)
     More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
     '''
-    latest_collections = get_latest_collection_versions(**kwargs)[0]
-    specific_latest_collections = {col: latest_collections.get(col, col) for col in collection}
+    latest_collections = get_latest_collection_versions(flag_recent_updates=False, **kwargs)
+    try:
+        specific_latest_collections = {col: latest_collections[col] for col in collection}
+    except KeyError as e:
+        return {
+            "code": 404,
+            "description": f"Collection {e} is not a supported Collection base name. The name must not include a version suffix. Please refer to the documentation for a list of supported Collections.",
+            "help": "https://api.os.uk/features/ngd/ofa/v1/collections"
+        }
+                       
     return specific_latest_collections
 
 def get_access_token(client_id: str, client_secret: str) -> str:
