@@ -8,7 +8,7 @@ from shapely import from_wkt
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon
 from copy import copy
 
-def get_latest_collection_versions(flag_recent_updates: bool = True, recent_update_days: int = 31) -> tuple[dict[str: str], list[str]]:
+def get_latest_collection_versions(flag_recent_updates: bool = True, recent_update_days: int = 31) -> dict:
     '''
     Returns the latest collection versions of each NGD collection.
     Feature collections follow the following naming convention: theme-collection-featuretype-version (eg. bld-fts-buildingline-2)
@@ -20,29 +20,44 @@ def get_latest_collection_versions(flag_recent_updates: bool = True, recent_upda
     response = r.get('https://api.os.uk/features/ngd/ofa/v1/collections/')
     collections_data = response.json()['collections']
     collections_list = [collection['id'] for collection in collections_data]
-    collection_base_names = set([re.sub(r'-\d+$', '', c) for c in collections_list])
+
+    collections_dict = dict()
+    for col in collections_list:
+        basename, version = re.split(r'-(?=[^-]*$)', col)
+        version = int(version)
+        if basename in collections_dict:
+            collections_dict[basename].append(version)
+        else:
+            collections_dict[basename] = [version]
+
     output_lookup = dict()
+    for basename, versions in collections_dict.items():
+        latest_version = max(versions)
+        output_lookup[basename] = f'{basename}-{latest_version}'
 
-    for base_name in collection_base_names:
-        all_versions = [c for c in collections_list if c.startswith(base_name)]
-        latest_version = max(all_versions, key=lambda c: int(c.split('-')[-1]))
-        output_lookup[base_name] = latest_version
+    if not(flag_recent_updates):
+        return output_lookup
 
-    recent_collections = None
-    if flag_recent_updates:
-        time_format = r'%Y-%m-%dT%H:%M:%SZ'
-        recent_update_cutoff = datetime.now() - timedelta(days=recent_update_days)
-        latest_versions_data = [c for c in collections_data if c['id'] in output_lookup.values()]
-        recent_collections = list()
-        for collection_data in latest_versions_data:
-            version_startdate = collection_data['extent']['temporal']['interval'][0][0]
-            time_obj = datetime.strptime(version_startdate, time_format)
-            if time_obj > recent_update_cutoff:
-                collection = collection_data['id']
-                recent_collections.append(collection)
-                logging.warning(f'{collection} is a recent version/update from the last {recent_update_days} days.')
+    time_format = r'%Y-%m-%dT%H:%M:%SZ'
+    recent_update_cutoff = datetime.now() - timedelta(days=recent_update_days)
+    latest_versions_data = [c for c in collections_data if c['id'] in output_lookup.values()]
+    recent_collections = list()
 
-    return output_lookup, recent_collections
+    for collection_data in latest_versions_data:
+        version_startdate = collection_data['extent']['temporal']['interval'][0][0]
+        time_obj = datetime.strptime(version_startdate, time_format)
+        if time_obj > recent_update_cutoff:
+            collection = collection_data['id']
+            recent_collections.append(collection)
+            logging.warning(f'{collection} is a recent version/update from the last {recent_update_days} days.')
+   
+    full_output = {
+        'collection-lookup': output_lookup,
+        'recent-update-threshold-days': recent_update_days,
+        'recent-collection-updates': recent_collections
+    }
+
+    return full_output
 
 def get_specific_latest_collections(collection: list[str], **kwargs) -> str:
     '''
@@ -51,8 +66,16 @@ def get_specific_latest_collections(collection: list[str], **kwargs) -> str:
     Output will supply a dictionary completing the full name of the feature collections by appending the latest version number (eg. bld-fts-buildingline-2)
     More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
     '''
-    latest_collections = get_latest_collection_versions(**kwargs)[0]
-    specific_latest_collections = {col: latest_collections.get(col, col) for col in collection}
+    latest_collections = get_latest_collection_versions(flag_recent_updates=False, **kwargs)
+    try:
+        specific_latest_collections = {col: latest_collections[col] for col in collection}
+    except KeyError as e:
+        return {
+            "code": 404,
+            "description": f"Collection {e} is not a supported Collection base name. The name must not include a version suffix. Please refer to the documentation for a list of supported Collections.",
+            "help": "https://api.os.uk/features/ngd/ofa/v1/collections"
+        }
+                       
     return specific_latest_collections
 
 def get_access_token(client_id: str, client_secret: str) -> str:
