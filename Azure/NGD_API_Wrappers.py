@@ -8,7 +8,7 @@ from shapely import from_wkt
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon
 from copy import copy
 
-def get_latest_collection_versions(flag_recent_updates: bool = True, recent_update_days: int = 31) -> tuple[dict[str: str], list[str]]:
+def get_latest_collection_versions(flag_recent_updates: bool = True, recent_update_days: int = 31) -> dict[str: str] | tuple[dict[str: str], list[str]]:
     '''
     Returns the latest collection versions of each NGD collection.
     Feature collections follow the following naming convention: theme-collection-featuretype-version (eg. bld-fts-buildingline-2)
@@ -28,21 +28,27 @@ def get_latest_collection_versions(flag_recent_updates: bool = True, recent_upda
         latest_version = max(all_versions, key=lambda c: int(c.split('-')[-1]))
         output_lookup[base_name] = latest_version
 
-    recent_collections = None
-    if flag_recent_updates:
-        time_format = r'%Y-%m-%dT%H:%M:%SZ'
-        recent_update_cutoff = datetime.now() - timedelta(days=recent_update_days)
-        latest_versions_data = [c for c in collections_data if c['id'] in output_lookup.values()]
-        recent_collections = list()
-        for collection_data in latest_versions_data:
-            version_startdate = collection_data['extent']['temporal']['interval'][0][0]
-            time_obj = datetime.strptime(version_startdate, time_format)
-            if time_obj > recent_update_cutoff:
-                collection = collection_data['id']
-                recent_collections.append(collection)
-                logging.warning(f'{collection} is a recent version/update from the last {recent_update_days} days.')
+    if not(flag_recent_updates):
+        return output_lookup
 
-    return output_lookup, recent_collections
+    time_format = r'%Y-%m-%dT%H:%M:%SZ'
+    recent_update_cutoff = datetime.now() - timedelta(days=recent_update_days)
+    latest_versions_data = [c for c in collections_data if c['id'] in output_lookup.values()]
+    recent_collections = list()
+
+    for collection_data in latest_versions_data:
+        version_startdate = collection_data['extent']['temporal']['interval'][0][0]
+        time_obj = datetime.strptime(version_startdate, time_format)
+        if time_obj > recent_update_cutoff:
+            collection = collection_data['id']
+            recent_collections.append(collection)
+            logging.warning(f'{collection} is a recent version/update from the last {recent_update_days} days.')
+   
+    output_lookup = {'collection-lookup': output_lookup}
+    recent_update_days = {'recent-update-threshold-days': recent_update_days}
+    recent_collections = {'recent-collection-updates': recent_collections}
+
+    return output_lookup, recent_update_days, recent_collections
 
 def get_specific_latest_collections(collection: list[str], **kwargs) -> str:
     '''
