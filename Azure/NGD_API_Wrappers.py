@@ -8,7 +8,7 @@ from shapely import from_wkt
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon
 from copy import copy
 
-def get_latest_collection_versions(flag_recent_updates: bool = True, recent_update_days: int = 31) -> dict[str: str] | tuple[dict[str: str], list[str]]:
+def get_latest_collection_versions(flag_recent_updates: bool = True, recent_update_days: int = 31) -> dict:
     '''
     Returns the latest collection versions of each NGD collection.
     Feature collections follow the following naming convention: theme-collection-featuretype-version (eg. bld-fts-buildingline-2)
@@ -20,13 +20,20 @@ def get_latest_collection_versions(flag_recent_updates: bool = True, recent_upda
     response = r.get('https://api.os.uk/features/ngd/ofa/v1/collections/')
     collections_data = response.json()['collections']
     collections_list = [collection['id'] for collection in collections_data]
-    collection_base_names = set([re.sub(r'-\d+$', '', c) for c in collections_list])
-    output_lookup = dict()
 
-    for base_name in collection_base_names:
-        all_versions = [c for c in collections_list if c.startswith(base_name)]
-        latest_version = max(all_versions, key=lambda c: int(c.split('-')[-1]))
-        output_lookup[base_name] = latest_version
+    collections_dict = dict()
+    for col in collections_list:
+        basename, version = re.split(r'-(?=[^-]*$)', col)
+        version = int(version)
+        if basename in collections_dict:
+            collections_dict[basename].append(version)
+        else:
+            collections_dict[basename] = [version]
+
+    output_lookup = dict()
+    for basename, versions in collections_dict.items():
+        latest_version = max(versions)
+        output_lookup[basename] = f'{basename}-{latest_version}'
 
     if not(flag_recent_updates):
         return output_lookup
