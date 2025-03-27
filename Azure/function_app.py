@@ -8,6 +8,7 @@ app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
 from marshmallow import Schema, INCLUDE, EXCLUDE
 from marshmallow.fields import Integer, String, Boolean, List
+from marshmallow.exceptions import ValidationError
 
 class LatestCollectionsSchema(Schema):
     flag_recent_updates = Boolean(data_key='flag-recent-updates', required=False)
@@ -70,13 +71,15 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:\
     params = {**req.params}
     try:
         parsed_params = schema.load(params)
-    except Exception as e:
+    except ValidationError as e:
+        code = 400
+        error_body = json.dumps({
+            "code": code,
+            "description": str(e),
+            "errorSource": "Catalyst Wrapper"
+        })
         return HttpResponse(
-            body=json.dumps({
-                "code": 400,
-                "description": str(e),
-                "errorSource": "Catalyst Wrapper"
-            }),
+            error_body,
             mimetype="application/json",
             status_code=400
         )
