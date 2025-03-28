@@ -166,14 +166,16 @@ def construct_response(req, schema_class, func: callable):
         try:
             parsed_params = schema.load(params)
         except Exception as e:
+            code = 400
+            error_body = json.dumps({
+                "code": code,
+                "description": str(e),
+                "errorSource": "Catalyst Wrapper"
+            })
             return HttpResponse(
-                body=json.dumps({
-                    "code": 400,
-                    "description": str(e),
-                    "errorSource": "Catalyst Wrapper"
-                }),
+                body=error_body,
                 mimetype="application/json",
-                status_code=400
+                status_code=code
             )
 
         custom_params = {
@@ -191,8 +193,8 @@ def construct_response(req, schema_class, func: callable):
             **custom_params
         )
         descr = data.get('description')
-        if data.get('errorSource') and descr:
-            fields = [x.replace('_','-') for x in schema.fields]
+        if data.get('errorSource') and type(descr) == str:
+            fields = [x.replace('_','-') for x in schema.fields if x != 'limit']
             attributes = ', '.join(fields)
             data['description'] = descr.format(attr=attributes)
         json_data = json.dumps(data)
@@ -202,14 +204,20 @@ def construct_response(req, schema_class, func: callable):
             mimetype="application/json"
         )
     except Exception as e:
-        error_response = {
-            "code": 500,
-            "description": str(e),
-        }
+        code = 500
+        error_string = str(e)
+        print(error_string)
+        if error_string.startswith('Expecting value'):
+            error_string += '. This could be due to a request URI which is too long or an input geometry which is too complex.'
+        error_response = json.dumps({
+            "code": code,
+            "description": error_string,
+            "errorSource": "Catalyst"
+        })
         return HttpResponse(
-            body=json.dumps(error_response),
+            body=error_response,
             mimetype="application/json",
-            status_code=500
+            status_code=code
         )
 
 @app.function_name('http_base')
