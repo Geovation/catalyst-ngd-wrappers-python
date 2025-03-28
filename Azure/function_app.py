@@ -204,11 +204,9 @@ def construct_response(req, schema_class, func: callable):
             mimetype="application/json"
         )
     except Exception as e:
+        raise e
         code = 500
         error_string = str(e)
-        print(error_string)
-        if error_string.startswith('Expecting value'):
-            error_string += '. This could be due to a request URI which is too long or an input geometry which is too complex.'
         error_response = json.dumps({
             "code": code,
             "description": error_string,

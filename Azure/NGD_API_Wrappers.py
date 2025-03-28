@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from shapely import from_wkt
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon
+from shapely.errors import GEOSException
 from copy import copy
 import json
 
@@ -386,7 +387,15 @@ def multigeometry_search_extension(func: callable):
         **kwargs
     ):
 
-        full_geom = from_wkt(wkt) if type(wkt) == str else wkt
+        try:
+            full_geom = from_wkt(wkt) if type(wkt) == str else wkt
+        except GEOSException:
+            return {
+                "code": 400,
+                "description": "The input geometry is not valid. Please ensure you have the correct formatting for your input geometry type.",
+                "help": "http://libgeos.org/specifications/wkt/",
+                "errorSource": "Catalyst Wrapper"
+            }
         search_areas = list()
 
         is_single_geom = type(full_geom) in [Point, LineString, Polygon]
