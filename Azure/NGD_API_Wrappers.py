@@ -257,7 +257,21 @@ def ngd_items_request(
     )
 
     status_code = response.status_code
-    json_response = response.json()
+
+    try:
+        json_response = response.json()
+    except json.JSONDecodeError as e:
+        error_string = str(e)
+        if error_string.startswith('Expecting value'):
+            error_string = {
+                'Error Text': error_string,
+                'Help (Catalyst)': 'This could be due to a request URI which is too long or an input geometry which is too complex'
+            }
+        return {
+            "code": status_code,
+            "description": error_string,
+            "errorSource": "OS NGD API"
+        }
 
     if status_code >= 400:
         descr = json_response.get('description', '')
