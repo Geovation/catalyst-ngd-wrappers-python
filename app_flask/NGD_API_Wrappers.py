@@ -200,7 +200,6 @@ def ngd_items_request(
         use_latest_collection (boolean, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. bld-fts-building[-2]), the latest version is used.
             Note that if use_latest_collection but 'collection' does specify a version, the specified version is always used regardless of use_latest_collection.
         headers (dict, optional) - Headers to pass to the query. These can include bearer-token authentication.
-        access_token (str) - An access token, which will be added as bearer token to the headers.
         **kwargs: other generic parameters to be passed to the requests.get()
 
     Returns the features as a geojson, as per the OS NGD API.

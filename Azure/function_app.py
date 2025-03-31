@@ -204,7 +204,6 @@ def construct_response(req, schema_class, func: callable):
             mimetype="application/json"
         )
     except Exception as e:
-        raise e
         code = 500
         error_string = str(e)
         error_response = json.dumps({
