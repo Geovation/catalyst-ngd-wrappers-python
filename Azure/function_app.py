@@ -1,5 +1,5 @@
 import azure.functions as func
-from azure.functions import HttpRequest, HttpResponse
+from azure.functions import HttpRequest, HttpResponse, HttpMethod
 import logging
 from NGD_API_Wrappers import *
 import json
@@ -8,6 +8,7 @@ app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
 from marshmallow import Schema, INCLUDE, EXCLUDE
 from marshmallow.fields import Integer, String, Boolean, List
+from marshmallow.exceptions import ValidationError
 
 class LatestCollectionsSchema(Schema):
     flag_recent_updates = Boolean(data_key='flag-recent-updates', required=False)
@@ -48,42 +49,37 @@ class GeomColSchema(GeomSchema, ColSchema):
 class LimitGeomColSchema(LimitSchema, GeomSchema, ColSchema):
     wkt = String(data_key='wkt', required=True)
 
-@app.route(route="http_trigger")
-def http_trigger(req: HttpRequest) -> HttpResponse:
-    logging.info('Python HTTP trigger function processed a request.')
-
-    name = req.params.get('name')
-    if not name:
-        try:
-            req_body = req.get_json()
-        except ValueError:
-            pass
-        else:
-            name = req_body.get('name')
-
-    if name:
-        return HttpResponse(f"Hello, {name}. This HTTP triggered function executed successfully.")
-    else:
-        return HttpResponse(
-             "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response.",
-             status_code=200
-        )
-
 @app.function_name('http_latest_collections')
 @app.route("catalyst/features/latest-collections")
-def http_latest_collections(req: HttpRequest) -> HttpResponse:
+def http_latest_collections(req: HttpRequest) -> HttpResponse:\
+
+    if req.method != 'GET':
+        code = 405
+        error_body = json.dumps({
+            "code": code,
+            "description": "The HTTP method requested is not supported. This endpoint only supports 'GET' requests.",
+            "errorSource": "Catalyst Wrapper"
+        })
+        return HttpResponse(
+            body=error_body,
+            mimetype="application/json",
+            status_code=code
+        )
+
     schema = LatestCollectionsSchema()
 
     params = {**req.params}
     try:
         parsed_params = schema.load(params)
-    except Exception as e:
+    except ValidationError as e:
+        code = 400
+        error_body = json.dumps({
+            "code": code,
+            "description": str(e),
+            "errorSource": "Catalyst Wrapper"
+        })
         return HttpResponse(
-            body=json.dumps({
-                "code": 400,
-                "description": str(e),
-                "errorSource": "Catalyst Wrapper"
-            }),
+            error_body,
             mimetype="application/json",
             status_code=400
         )
@@ -98,6 +94,20 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
 @app.function_name('http_latest_single_col')
 @app.route("catalyst/features/latest-collections/{collection}")
 def http_latest_single_col(req: HttpRequest) -> HttpResponse:
+
+    if req.method != 'GET':
+        code = 405
+        error_body = json.dumps({
+            "code": code,
+            "description": "The HTTP method requested is not supported. This endpoint only supports 'GET' requests.",
+            "errorSource": "Catalyst Wrapper"
+        })
+        return HttpResponse(
+            body=error_body,
+            mimetype="application/json",
+            status_code=code
+        )
+
     schema = LatestCollectionsSchema()
     collection = req.route_params.get('collection')
 
@@ -130,6 +140,19 @@ def delistify(params: dict):
 
 def construct_response(req, schema_class, func: callable):
     try:
+
+        if req.method != 'GET':
+            error_body = json.dumps({
+                "code": 405,
+                "description": "The HTTP method requested is not supported. This endpoint only supports 'GET' requests.",
+                "errorSource": "Catalyst Wrapper"
+            })
+            return HttpResponse(
+                body=error_body,
+                mimetype="application/json",
+                status_code=405
+            )
+
         schema = schema_class()
         collection = req.route_params.get('collection')
 
@@ -143,14 +166,16 @@ def construct_response(req, schema_class, func: callable):
         try:
             parsed_params = schema.load(params)
         except Exception as e:
+            code = 400
+            error_body = json.dumps({
+                "code": code,
+                "description": str(e),
+                "errorSource": "Catalyst Wrapper"
+            })
             return HttpResponse(
-                body=json.dumps({
-                    "code": 400,
-                    "description": str(e),
-                    "errorSource": "Catalyst Wrapper"
-                }),
+                body=error_body,
                 mimetype="application/json",
-                status_code=400
+                status_code=code
             )
 
         custom_params = {
@@ -168,8 +193,8 @@ def construct_response(req, schema_class, func: callable):
             **custom_params
         )
         descr = data.get('description')
-        if data.get('errorSource') and descr:
-            fields = [x.replace('_','-') for x in schema.fields]
+        if data.get('errorSource') and type(descr) == str:
+            fields = [x.replace('_','-') for x in schema.fields if x != 'limit']
             attributes = ', '.join(fields)
             data['description'] = descr.format(attr=attributes)
         json_data = json.dumps(data)
@@ -179,14 +204,17 @@ def construct_response(req, schema_class, func: callable):
             mimetype="application/json"
         )
     except Exception as e:
-        error_response = {
-            "error": str(e),
-            "status": 500  # You might want to make this dynamic based on the error type
-        }
+        code = 500
+        error_string = str(e)
+        error_response = json.dumps({
+            "code": code,
+            "description": error_string,
+            "errorSource": "Catalyst"
+        })
         return HttpResponse(
-            body=json.dumps(error_response),
+            body=error_response,
             mimetype="application/json",
-            status_code=500
+            status_code=code
         )
 
 @app.function_name('http_base')
@@ -329,6 +357,7 @@ def http_auth_geom_col(req: HttpRequest) -> HttpResponse:
     )
     return response
 
+@app.function_name('http_auth_geom_col')
 @app.route("catalyst/features/multi-collection/items/auth-geom-col")
 def http_auth_geom_col(req: HttpRequest) -> HttpResponse:
     response = construct_response(

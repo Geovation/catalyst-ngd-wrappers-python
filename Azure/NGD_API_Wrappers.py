@@ -6,7 +6,9 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from shapely import from_wkt
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon
+from shapely.errors import GEOSException
 from copy import copy
+import json
 
 def get_latest_collection_versions(flag_recent_updates: bool = True, recent_update_days: int = 31) -> dict:
     '''
@@ -200,7 +202,7 @@ def ngd_items_request(
     collection: str,
     query_params: dict = {},
     filter_params: dict = {},
-    wkt= None,
+    wkt = None,
     use_latest_collection: bool = False,
     add_metadata: bool = True,
     headers: dict = {},
@@ -254,15 +256,37 @@ def ngd_items_request(
         headers=headers,
         **kwargs
     )
-    json_response = response.json()
 
-    if response.status_code >= 400:
-        json_response['errorSource'] = 'OS NGD API'
-        descr = json_response.get('description')
-        if descr.startswith('Not supported query parameter'):
+    status_code = response.status_code
+
+    try:
+        json_response = response.json()
+    except json.JSONDecodeError as e:
+        error_string = str(e)
+        if error_string.startswith('Expecting value'):
+            error_string = {
+                'Error Text': error_string,
+                'Help (Catalyst)': 'This could be due to a request URI which is too long or an input geometry which is too complex'
+            }
+        return {
+            "code": status_code,
+            "description": error_string,
+            "errorSource": "OS NGD API"
+        }
+
+    if status_code >= 400:
+        descr = json_response.get('description', '')
+        if not(descr):
+            json_response.pop('code', None)
+            descr = json_response
+            json_response = {'code': status_code, 'description': descr}
+        elif descr.startswith('Not supported query parameter'):
             descr = descr.replace('Supported parameters are', 'Supported NGD parameters are')
             descr += '. Additional supported Catalyst parameters for this function are: {attr}.'
             json_response['description'] = descr
+        if not(json_response.get('code')):
+            json_response = {'code': status_code} | json_response
+        json_response['errorSource'] = 'OS NGD API'
         return json_response
 
     for feature in json_response['features']:
@@ -272,7 +296,6 @@ def ngd_items_request(
     if add_metadata:
         json_response['source'] = "Compiled from code by Geovation from Ordnance Survey"
         json_response['numberOfRequests'] = 1
-
     return json_response
 
 def limit_extension(func: callable):
@@ -291,7 +314,7 @@ def limit_extension(func: callable):
             return {
                 "code": 400,
                 "description": "'offset' is not a valid attribute for functions using this Catalyst wrapper.",
-                "errorSource": "OS NGD API"
+                "errorSource": "Catalyst Wrapper"
             }
 
         items = list()
@@ -364,7 +387,15 @@ def multigeometry_search_extension(func: callable):
         **kwargs
     ):
 
-        full_geom = from_wkt(wkt) if type(wkt) == str else wkt
+        try:
+            full_geom = from_wkt(wkt) if type(wkt) == str else wkt
+        except GEOSException:
+            return {
+                "code": 400,
+                "description": "The input geometry is not valid. Please ensure you have the correct formatting for your input geometry type.",
+                "help": "http://libgeos.org/specifications/wkt/",
+                "errorSource": "Catalyst Wrapper"
+            }
         search_areas = list()
 
         is_single_geom = type(full_geom) in [Point, LineString, Polygon]
