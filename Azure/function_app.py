@@ -115,14 +115,16 @@ def http_latest_single_col(req: HttpRequest) -> HttpResponse:
     try:
         parsed_params = schema.load(params)
     except Exception as e:
+        code = 400
+        error_body = json.dumps({
+            "code": code,
+            "description": str(e),
+            "errorSource": "Catalyst Wrapper"
+        })
         return HttpResponse(
-            body=json.dumps({
-                "code": 400,
-                "description": str(e),
-                "errorSource": "Catalyst Wrapper"
-            }),
+            body=error_body,
             mimetype="application/json",
-            status_code=400
+            status_code=code
         )
 
     data = get_specific_latest_collections([collection], **parsed_params)
@@ -142,15 +144,16 @@ def construct_response(req, schema_class, func: callable):
     try:
 
         if req.method != 'GET':
+            code = 405
             error_body = json.dumps({
-                "code": 405,
+                "code": code,
                 "description": "The HTTP method requested is not supported. This endpoint only supports 'GET' requests.",
                 "errorSource": "Catalyst Wrapper"
             })
             return HttpResponse(
                 body=error_body,
                 mimetype="application/json",
-                status_code=405
+                status_code=code
             )
 
         schema = schema_class()
@@ -209,7 +212,7 @@ def construct_response(req, schema_class, func: callable):
         error_response = json.dumps({
             "code": code,
             "description": error_string,
-            "errorSource": "Catalyst"
+            "errorSource": "Catalyst Wrapper"
         })
         return HttpResponse(
             body=error_response,

@@ -378,6 +378,22 @@ def limit_extension(func: callable):
     """
     return wrapper
 
+def multilevel_explode(shape) -> list[Polygon | LineString | Point]:
+    """
+    Explode a geometry into its constituent parts.
+    Where multigeometries contain other multigeometries, the layers are flattened into a single list, such that the results lists contains only single geomtries.
+    """
+
+    if type(shape) in [Point, LineString, Polygon]:
+        return [shape]
+
+    lower_shapes = shape.geoms
+    result_list = list()
+    for lshape in lower_shapes:
+        lower_shape_exploded = multilevel_explode(lshape)
+        result_list.extend(lower_shape_exploded)
+    return result_list
+
 def multigeometry_search_extension(func: callable):
 
     def wrapper(
@@ -396,10 +412,9 @@ def multigeometry_search_extension(func: callable):
                 "help": "http://libgeos.org/specifications/wkt/",
                 "errorSource": "Catalyst Wrapper"
             }
+        
         search_areas = list()
-
-        is_single_geom = type(full_geom) in [Point, LineString, Polygon]
-        partial_geoms = [full_geom] if is_single_geom else full_geom.geoms
+        partial_geoms = multilevel_explode(full_geom)
 
         for search_area, geom in enumerate(partial_geoms):
             json_response = func(*args, wkt=geom, **kwargs)
