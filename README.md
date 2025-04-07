@@ -95,6 +95,7 @@ graph TD
         - When the _geom_ extension is applied, the searchAreaNumber value is also included
     - **type**: str - object type ("Feature")
 - **Response Codes**
+    
     For error responses (all except 200), the 'errorSource' attribute specifies whether the error was thrown from the OS NGD API, or from the surrounding Catalyst wrapper.
     | Response Code | Description                                                                                           |
     |---------------|-------------------------------------------------------------------------------------------------------|
