@@ -57,12 +57,12 @@ graph TD
     - **wkt**: str (well-knwon text) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a str or as a Shapely geometry object.
     The function automatically composes the full INTERSECTS filter and adds it to the _filter_ query parameter.
     Make sure that _filter-crs_ is set to the appropriate value.
-    - **use-latest-collection** (boolean, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. "bld-fts-building<s>-2</s>"), the latest version is used. If _use-latest-collection=True_ but the given collection does include a version, the specified version is always used regardless of use_latest_collection.
+    - **use-latest-collection** (bool, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. "bld-fts-building<s>-2</s>"), the latest version is used. If _use-latest-collection=True_ but the given collection does include a version, the specified version is always used regardless of use_latest_collection.
     - **request-limit**: int (default 50) - the number of OS NGD Feature requests at which to cap the Catalyst request. Consider [pricing](https://osdatahub.os.uk/plans).
         - **$${\color{red}IMPORTANT}$$**: When used with _geom_ and/or _col_ exention, this limit applies <ins>per search area, per collection</ins>.
         The total number of features returned could therefore be much higher.
         - When used in conjunction with _limit_, the lower cap is applied.
-    - **hierarchical-output**: boolean, default False - If True, then results are returned in a hierarchical structure of GeoJSONs according to collection and/or search area, when the _col_ and _geom_ extensions are applied respectively.
+    - **hierarchical-output**: bool, default False - If True, then results are returned in a hierarchical structure of GeoJSONs according to collection and/or search area, when the _col_ and _geom_ extensions are applied respectively.
     If False, results are returned as a single GeoJSON.
         - _geom_ and _col_ extensions only.
     - **collections**: str (accepts multiple values)
@@ -103,6 +103,7 @@ graph TD
     - **406**: A request header value was not supported.
     - **414**: The request URI is too long. Please simplify the geometry filter and/or use simpler attribute filters.
     - **504**: The request has timed out. Please check the service availability dashboard: [OS Data Hub Service Status](https://osdatahub.os.uk/serviceStatus).
+    For error responses (all except 200), the 'errorSource' attribute specifies whether the error was thrown from the OS NGD API, or from the surrounding Catalyst wrapper.
 
 ## Summary of Extensions
 
