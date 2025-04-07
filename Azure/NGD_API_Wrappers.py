@@ -264,6 +264,7 @@ def ngd_items_request(
     except json.JSONDecodeError as e:
         error_string = str(e)
         if error_string.startswith('Expecting value'):
+            status_code = 414
             error_string = {
                 'Error Text': error_string,
                 'Help (Catalyst)': 'This could be due to a request URI which is too long or an input geometry which is too complex'
