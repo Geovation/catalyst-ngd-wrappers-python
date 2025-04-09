@@ -497,7 +497,10 @@ def multiple_collections_extension(func: callable) -> dict:
     ):
 
         if use_latest_collection:
-            collection = get_specific_latest_collections(collection).values()
+            has_version, no_version = list(), list()
+            [has_version.append(c) if c[-1].isdigit() else no_version.append(c) for c in collection]
+            collection = list(get_specific_latest_collections(no_version).values())
+            collection.extend(has_version)
 
         results = dict()
         for col in collection:
@@ -509,6 +512,8 @@ def multiple_collections_extension(func: callable) -> dict:
             )
             code = json_response.get('code', 200)
             if code == 404 and 'is not a supported Collection' in json_response.get('description'):
+                print(func.__name__)
+                print(json_response)
                 return json_response
             if code >= 400:
                 return json_response
