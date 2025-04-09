@@ -295,7 +295,6 @@ def ngd_items_request(
         feature['properties']['collection'] = collection
 
     if add_metadata:
-        json_response['source'] = "Compiled from code by Geovation from Ordnance Survey"
         json_response['numberOfRequests'] = 1
     return json_response
 
@@ -356,7 +355,6 @@ def limit_extension(func: callable):
             "numberReturned": len(items),
             "timeStamp": datetime.now().isoformat(),
             "collection": kwargs.get('collection'),
-            "source": "Compiled from code by Geovation from Ordnance Survey",
             "features": items
         }
         return geojson
@@ -432,7 +430,6 @@ def multigeometry_search_extension(func: callable):
 
         geojson = {
             'type': 'FeatureCollection',
-            'source': 'Compiled from code by Geovation from Ordnance Survey',
             'numberOfRequests': 0,
             'numberReturned': 0,
             'features': []
@@ -524,7 +521,6 @@ def multiple_collections_extension(func: callable) -> dict:
 
         geojson = {
             'type': 'FeatureCollection',
-            'source': 'Compiled from code by Geovation from Ordnance Survey',
             'numberOfRequests': 0,
             'numberOfRequestsByCollection': {},
             'numberReturned': 0,
