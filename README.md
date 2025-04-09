@@ -2,8 +2,9 @@
 1. Create a .env file with OS DataHub account details, as specified in .env.sample
 3. Create .venv with _python -m venv .venv_ and activate with _source .venv/bin/activate_
 2. Install requirements with _pip install -r requirements.txt_
-3. launch azurite with _azurite_, making sure you have Azurite installed within your virtual environment
-4. Access the development server on http://localhost:7071/api
+3. Launch azurite, making sure you have Azurite installed within your virtual environment
+4. Launch the functions by navigating to the Azure folder and running _func start_.
+5. Access the development server on http://localhost:7071/api
 
 # CatalyST-NGD-Wrappers
 
@@ -118,6 +119,11 @@ graph TD
 |**col**|hierarchical-output, collections|Enables multiple OS NGD collections to be searched at once. Each collection value supplied as query parameters is searched in turn for features, with the collection returned in feature properties, and as feature metadata.|{collectionId} path parameter must be "multi-collection". When combined with the _geom_ extension, requests are subdivided into collections first, and then into search areas.|
 
 ## Available endpoints resulting from extension combinations
+
+- Make sure to prefix the endpoints below with one of the following
+    - Cloud server: https://catalyst-ngd-wrapper-functions.azurewebsites.net/api/
+    - Local azurite deployment: http://localhost:7071/api/
+
 - catalyst/features/ngd/ofa/v1/collections/{collectionId}/items
 - catalyst/features/ngd/ofa/v1/collections/{collectionId}/items/limit
 - catalyst/features/ngd/ofa/v1/collections/{collectionId}/items/geom
