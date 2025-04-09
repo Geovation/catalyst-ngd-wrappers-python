@@ -1,9 +1,9 @@
-# Local Deployment
+# Local Deployment with Azurite
 1. Create a .env file with OS DataHub account details, as specified in .env.sample
 3. Create .venv with _python -m venv .venv_ and activate with _source .venv/bin/activate_
 2. Install requirements with _pip install -r requirements.txt_
-3. Launch flask application with _flask --app app\_flask/main run_
-4. Access the development server on http://127.0.0.1:5000
+3. launch azurite with _azurite_, making sure you have Azurite installed within your virtual environment
+4. Access the development server on http://localhost:7071/api
 
 # CatalyST-NGD-Wrappers
 
