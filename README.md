@@ -35,7 +35,7 @@ graph TD
 ## Request Specifications
 - **Path Parameters**
     - **collectionId**: str - Any collection available from the NGD, or "multi-collection" (for when _col_ extension applied)
-- **Query Parameters consistent from OS NGD API - Features items request** (refer to docs above for details)
+- **Query Parameters inherited from OS NGD API - Features items request** (refer to docs above for details)
     - **key**: str - OS DataHub project API Key
     - **bbox**: str
     - **bbox-crs**: str (xmin,ymin,xmax,ymax)
