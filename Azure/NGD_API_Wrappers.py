@@ -295,7 +295,6 @@ def ngd_items_request(
         feature['properties']['collection'] = collection
 
     if add_metadata:
-        json_response['source'] = "Compiled from code by Geovation from Ordnance Survey"
         json_response['numberOfRequests'] = 1
     return json_response
 
@@ -356,7 +355,6 @@ def limit_extension(func: callable):
             "numberReturned": len(items),
             "timeStamp": datetime.now().isoformat(),
             "collection": kwargs.get('collection'),
-            "source": "Compiled from code by Geovation from Ordnance Survey",
             "features": items
         }
         return geojson
@@ -432,7 +430,6 @@ def multigeometry_search_extension(func: callable):
 
         geojson = {
             'type': 'FeatureCollection',
-            'source': 'Compiled from code by Geovation from Ordnance Survey',
             'numberOfRequests': 0,
             'numberReturned': 0,
             'features': []
@@ -497,7 +494,10 @@ def multiple_collections_extension(func: callable) -> dict:
     ):
 
         if use_latest_collection:
-            collection = get_specific_latest_collections(collection).values()
+            has_version, no_version = list(), list()
+            [has_version.append(c) if c[-1].isdigit() else no_version.append(c) for c in collection]
+            collection = list(get_specific_latest_collections(no_version).values())
+            collection.extend(has_version)
 
         results = dict()
         for col in collection:
@@ -509,6 +509,8 @@ def multiple_collections_extension(func: callable) -> dict:
             )
             code = json_response.get('code', 200)
             if code == 404 and 'is not a supported Collection' in json_response.get('description'):
+                print(func.__name__)
+                print(json_response)
                 return json_response
             if code >= 400:
                 return json_response
@@ -519,7 +521,6 @@ def multiple_collections_extension(func: callable) -> dict:
 
         geojson = {
             'type': 'FeatureCollection',
-            'source': 'Compiled from code by Geovation from Ordnance Survey',
             'numberOfRequests': 0,
             'numberOfRequestsByCollection': {},
             'numberReturned': 0,
