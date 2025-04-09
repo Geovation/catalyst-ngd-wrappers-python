@@ -45,7 +45,7 @@ graph TD
     - **filter-lang**: str
     - **limit**: int
         - This can exceed the usual cap of 100 when the _limit_ extension is applied.
-        - **$${\color{red}IMPORTANT}$$**: When used with _geom_ and/or _col_ exention, this limit applies per search area, per collection.
+        - **$${\color{red}IMPORTANT}$$**: When used with _geom_ and/or _col_ exention, this limit applies <ins>per search area, per collection</ins>.
         The total number of features returned could therefore be much higher.
         - When used in conjunction with _request-limit_, the lower cap is applied.
         - **$${\color{red}Note}$$**: When used with _geom_ extension, the number of features returned per _geom_ could be lower than _limit_ in some cases.
@@ -115,7 +115,7 @@ graph TD
 |Extension|Extra Query Parameters|Description|Notes & Constaints|
 |---|---|---|---|
 |**_all of below_**|wkt, use-latest-collection|Basic wrapper for OS NGD API - Features, with some extra query parameters.||
-|**limit**|request-limit|Extends the maximum number of features returned above the default maximum 100 by looping through multiple OS NGD API - Features requests.|Default value of 50. This can be increased manually. When _request-limit_ and _limit_ are both supplied, the lower constraint is applied. When combined with _geom_ and/or _col_, the limit applies per search area, per collection.|
+|**limit**|request-limit|Extends the maximum number of features returned above the default maximum 100 by looping through multiple OS NGD API - Features requests.|Default value of 50. This can be increased manually. When _request-limit_ and _limit_ are both supplied, the lower constraint is applied. When combined with _geom_ and/or _col_, the limit applies <ins>per search area, per collection.</ins>|
 |**geom**|hierarchical-output|An alternative means of returning OS NGD features for a search area which is a Multi-Geometry (MultiPoint, MultiLinestring, MultiPolygon, or GeometryCollection), which will in some cases improve speed, performance, and prevent the call from timing out. Each geometry is assigned a "searchAreaNumber", and each search area is searched in turn for features, with the search area numbers returned in feature properties, and as feature metadata.|When a feature overlaps with multiple search areas, it is returned once when _hierarchical-output=Flalse_, with searchAreaNumber returning a list. When _hierarchial-output=True_, the feature is repeated in the output for each search area.|
 |**col**|hierarchical-output, collections|Enables multiple OS NGD collections to be searched at once. Each collection value supplied as query parameters is searched in turn for features, with the collection returned in feature properties, and as feature metadata.|{collectionId} path parameter must be "multi-collection". When combined with the _geom_ extension, requests are subdivided into collections first, and then into search areas.|
 
