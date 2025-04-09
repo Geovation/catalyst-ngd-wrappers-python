@@ -45,10 +45,10 @@ graph TD
     - **filter-lang**: str
     - **limit**: int
         - This can exceed the usual cap of 100 when the _limit_ extension is applied.
-        - **$${\color{red}IMPORTANT}$$**: When used with _geom_ and/or _col_ exention, this limit applies <ins>per search area, per collection</ins>.
+        - **${\color{red}IMPORTANT}$**: When used with _geom_ and/or _col_ exention, this limit applies <ins>per search area, per collection</ins>.
         The total number of features returned could therefore be much higher.
         - When used in conjunction with _request-limit_, the lower cap is applied.
-        - **$${\color{red}Note}$$**: When used with _geom_ extension, the number of features returned per _geom_ could be lower than _limit_ in some cases.
+        - **${\color{red}Note}$**: When used with _geom_ extension, the number of features returned per _geom_ could be lower than _limit_ in some cases.
         This is because, if features overlap multiple search areas, duplicates are removed after the limit is reached.
     - **offset**: int - Not available when used with the _limit_ extension 
 - **Additional Catalyst Query Parameters**
@@ -58,7 +58,7 @@ graph TD
     - **wkt**: str (well-known text) - A means of searching a geometry for features. The search area(s) must be supplied in wkt.
     The function automatically composes the full INTERSECTS filter and adds it to the _filter_ query parameter. [How to write well-known text.](https://libgeos.org/specifications/wkt/)
     Make sure that _filter-crs_ is set to the appropriate value.
-    - **use-latest-collection** (bool, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. "bld-fts-building<s>-2</s>"), the latest version is used. If _use-latest-collection=True_ but the given collection does include a version, the specified version is always used regardless of use_latest_collection.
+    - **use-latest-collection** (bool, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. "bld-fts-building<s>-2</s>"), the latest version is used. If _use-latest-collection=True_ but the given collection does include a version, the specified version is always used regardless.
     - **request-limit**: int (default 50) - the number of OS NGD Feature requests at which to cap the Catalyst request. Consider [pricing](https://osdatahub.os.uk/plans).
         - **$${\color{red}IMPORTANT}$$**: When used with _geom_ and/or _col_ exention, this limit applies <ins>per search area, per collection</ins>.
         The total number of features returned could therefore be much higher.
@@ -81,7 +81,6 @@ graph TD
         - **links** - This is absent if either _limit_ extension is applied, or if _hierarchical-output=False_ (if this attribute applies).
         This is because in these cases the GeoJSON(s) comprising the response do not represent a single NGD feature request.
     - Additional Catalyst attributes
-        - **source**: str - Note on Catalyst/Geovation/Ordnance Survey
         - **numberOfReqeusts**: int - The number of NGD items requests from which the final response is compiled
         - **numberOfRequestsByCollection**: dict[str: int] - The number of NGD items requests made, split by collection. Only included when _col_ extension applied and _hierarchical-output=False_.
         - **numberReturnedByCollection**: dict[str: int] - The number of features returned, split by collection. 
