@@ -55,8 +55,8 @@ graph TD
     - **filter_params**: str (dict) - OS NGD attribute filters to pass to the query within the _filter_ query parameter. The can be used instead of or in addition to manually setting the filter in _query\_params_.
     The key-value pairs will appended using the EQUAL TO [ = ] comparator. Any other CQL Operator comparisons must be set manually in query_params.
     Queryable attributes can be found in OS NGD [codelists documentation](https://docs.os.uk/osngd/code-lists/code-lists-overview), or by inserting the relevant collectionId into the https://api.os.uk/features/ngd/ofa/v1/collections/{{collectionId}}/queryables endpoint.
-    - **wkt**: str (well-known text) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a str or as a Shapely geometry object. [How to write well-known text?](https://libgeos.org/specifications/wkt/)
-    The function automatically composes the full INTERSECTS filter and adds it to the _filter_ query parameter.
+    - **wkt**: str (well-known text) - A means of searching a geometry for features. The search area(s) must be supplied in wkt.
+    The function automatically composes the full INTERSECTS filter and adds it to the _filter_ query parameter. [How to write well-known text.](https://libgeos.org/specifications/wkt/)
     Make sure that _filter-crs_ is set to the appropriate value.
     - **use-latest-collection** (bool, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. "bld-fts-building<s>-2</s>"), the latest version is used. If _use-latest-collection=True_ but the given collection does include a version, the specified version is always used regardless of use_latest_collection.
     - **request-limit**: int (default 50) - the number of OS NGD Feature requests at which to cap the Catalyst request. Consider [pricing](https://osdatahub.os.uk/plans).
