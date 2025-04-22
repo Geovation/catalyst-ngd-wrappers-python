@@ -1,7 +1,6 @@
 import requests as r
 import re
 import os
-import logging
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from shapely import from_wkt
@@ -51,7 +50,6 @@ def get_latest_collection_versions(flag_recent_updates: bool = True, recent_upda
         if time_obj > recent_update_cutoff:
             collection = collection_data['id']
             recent_collections.append(collection)
-            logging.warning(f'{collection} is a recent version/update from the last {recent_update_days} days.')
    
     full_output = {
         'collection-lookup': output_lookup,
