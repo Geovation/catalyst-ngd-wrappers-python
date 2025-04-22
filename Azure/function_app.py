@@ -55,6 +55,7 @@ class LimitGeomColSchema(LimitSchema, GeomSchema, ColSchema):
 def http_latest_collections(req: HttpRequest) -> HttpResponse:
 
     logger.info(req.url)
+    logger.info(req.params)
     if req.method != 'GET':
         code = 405
         error_body = json.dumps({
@@ -98,6 +99,7 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
 def http_latest_single_col(req: HttpRequest) -> HttpResponse:
     
     logger.info(req.url)
+    logger.info(req.params)
     if req.method != 'GET':
         code = 405
         error_body = json.dumps({
@@ -145,6 +147,7 @@ def delistify(params: dict):
 
 def construct_response(req: HttpRequest, schema_class: type, func: callable) -> HttpResponse:
     logger.info(req.url)
+    logger.info(req.params)
     try:
         if req.method != 'GET':
             code = 405
