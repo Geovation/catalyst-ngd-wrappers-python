@@ -53,7 +53,11 @@ class LimitGeomColSchema(LimitSchema, GeomSchema, ColSchema):
 @app.function_name('http_latest_collections')
 @app.route("catalyst/features/latest-collections")
 def http_latest_collections(req: HttpRequest) -> HttpResponse:
-    logger.info("URL: " + req.url)
+    logger.info({
+        "URL": req.url,
+        "Params": req.params,
+        "Route_Params": req.route_params
+    })
     if req.method != 'GET':
         code = 405
         error_body = json.dumps({
@@ -95,7 +99,11 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
 @app.function_name('http_latest_single_col')
 @app.route("catalyst/features/latest-collections/{collection}")
 def http_latest_single_col(req: HttpRequest) -> HttpResponse:
-    logger.info("URL: " + req.url)
+    logger.info({
+        "URL": req.url,
+        "Params": req.params,
+        "Route_Params": req.route_params
+    })
     if req.method != 'GET':
         code = 405
         error_body = json.dumps({
@@ -142,7 +150,11 @@ def delistify(params: dict):
             params[k] = v[0]
 
 def construct_response(req: HttpRequest, schema_class: type, func: callable) -> HttpResponse:
-    logger.info("URL: " + req.url)
+    logger.info({
+        "URL": req.url,
+        "Params": req.params,
+        "Route_Params": req.route_params
+    })
     try:
         if req.method != 'GET':
             code = 405
