@@ -52,7 +52,7 @@ class LimitGeomColSchema(LimitSchema, GeomSchema, ColSchema):
 
 @app.function_name('http_latest_collections')
 @app.route("catalyst/features/latest-collections")
-def http_latest_collections(req: HttpRequest) -> HttpResponse:\
+def http_latest_collections(req: HttpRequest) -> HttpResponse:
 
     logger.info(req.url)
     if req.method != 'GET':
@@ -143,7 +143,7 @@ def delistify(params: dict):
         if k != 'collection':
             params[k] = v[0]
 
-def construct_response(req, schema_class, func: callable):
+def construct_response(req: HttpRequest, schema_class: type, func: callable) -> HttpResponse:
     logger.info(req.url)
     try:
         if req.method != 'GET':
