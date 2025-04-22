@@ -51,7 +51,6 @@ def get_latest_collection_versions(flag_recent_updates: bool = True, recent_upda
         if time_obj > recent_update_cutoff:
             collection = collection_data['id']
             recent_collections.append(collection)
-            logging.warning(f'{collection} is a recent version/update from the last {recent_update_days} days.')
    
     full_output = {
         'collection-lookup': output_lookup,
