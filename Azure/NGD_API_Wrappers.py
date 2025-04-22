@@ -1,7 +1,6 @@
 import requests as r
 import re
 import os
-import logging
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from shapely import from_wkt

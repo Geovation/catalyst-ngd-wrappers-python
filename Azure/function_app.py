@@ -4,6 +4,7 @@ import logging
 from NGD_API_Wrappers import *
 import json
 
+logger = logging.getLogger(__name__)
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
 from marshmallow import Schema, INCLUDE, EXCLUDE
@@ -53,6 +54,7 @@ class LimitGeomColSchema(LimitSchema, GeomSchema, ColSchema):
 @app.route("catalyst/features/latest-collections")
 def http_latest_collections(req: HttpRequest) -> HttpResponse:\
 
+    logger.info(req.url)
     if req.method != 'GET':
         code = 405
         error_body = json.dumps({
@@ -94,7 +96,8 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:\
 @app.function_name('http_latest_single_col')
 @app.route("catalyst/features/latest-collections/{collection}")
 def http_latest_single_col(req: HttpRequest) -> HttpResponse:
-
+    
+    logger.info(req.url)
     if req.method != 'GET':
         code = 405
         error_body = json.dumps({
@@ -141,8 +144,8 @@ def delistify(params: dict):
             params[k] = v[0]
 
 def construct_response(req, schema_class, func: callable):
+    logger.info(req.url)
     try:
-
         if req.method != 'GET':
             code = 405
             error_body = json.dumps({
