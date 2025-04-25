@@ -50,6 +50,28 @@ class GeomColSchema(GeomSchema, ColSchema):
 class LimitGeomColSchema(LimitSchema, GeomSchema, ColSchema):
     wkt = String(data_key='wkt', required=True)
 
+from opencensus.ext.azure.trace_exporter import AzureExporter
+from opencensus.trace import Tracer
+from opencensus.trace.samplers import ProbabilitySampler
+
+# Set up the Application Insights exporter
+exporter = AzureExporter(connection_string="InstrumentationKey=<YOUR_INSTRUMENTATION_KEY>")
+
+# Create a global dictionary to hold request-specific properties (to be enriched dynamically)
+dynamic_properties = {}
+
+def enrich_telemetry(envelope):
+    """
+    Enrich telemetry with dynamic custom dimensions.
+    This function is invoked for every telemetry item.
+    """
+    if envelope.data.base_type == 'RequestData':
+        # Add dynamic properties to the request's custom dimensions
+        envelope.data.base_data.properties.update(dynamic_properties)
+
+# Attach the telemetry processor to the exporter
+exporter.add_telemetry_processor(enrich_telemetry)
+
 @app.function_name('http_latest_collections')
 @app.route("catalyst/features/latest-collections")
 def http_latest_collections(req: HttpRequest) -> HttpResponse:
@@ -99,10 +121,12 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
 @app.function_name('http_latest_single_col')
 @app.route("catalyst/features/latest-collections/{collection}")
 def http_latest_single_col(req: HttpRequest) -> HttpResponse:
-    logger.info({
-        "URL": req.url,
-        "Params": req.params,
-        "Route_Params": req.route_params
+    logger.info("Request received", extra={
+        "custom_dimensions": {
+            "URL": req.url,
+            "Params": req.params,
+            "Route_Params": req.route_params
+        }
     })
     if req.method != 'GET':
         code = 405
