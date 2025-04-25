@@ -18,7 +18,7 @@ from marshmallow.exceptions import ValidationError
 from applicationinsights import TelemetryClient
 
 # Initialize the Telemetry Client
-telemetry_client = TelemetryClient()
+telemetry_client = TelemetryClient('b4b97b45-708f-41fd-85cc-e2cb6d02acd6')
 
 class CustomTelemetryInitializer:
     def initialize(self, telemetry, request):
