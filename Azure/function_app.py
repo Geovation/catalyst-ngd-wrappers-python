@@ -77,8 +77,6 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
     # Initialize the telemetry with request information
     initializer.initialize(telemetry, req)
 
-    # Send telemetry data
-    telemetry_client.flush()
     # tracer = Tracer(exporter=exporter, sampler=ProbabilitySampler(1.0))
     # logger.info({
     #     "URL": req.url,
@@ -118,6 +116,9 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
 
     data = get_latest_collection_versions(**parsed_params)
     json_data = json.dumps(data)
+
+    # Send telemetry data
+    telemetry_client.flush()
     return HttpResponse(
         body=json_data,
         mimetype="application/json"
@@ -134,8 +135,6 @@ def http_latest_single_col(req: HttpRequest) -> HttpResponse:
     # Initialize the telemetry with request information
     initializer.initialize(telemetry, req)
 
-    # Send telemetry data
-    telemetry_client.flush()
     if req.method != 'GET':
         code = 405
         error_body = json.dumps({
@@ -170,7 +169,8 @@ def http_latest_single_col(req: HttpRequest) -> HttpResponse:
 
     data = get_specific_latest_collections([collection], **parsed_params)
     json_data = json.dumps(data)
-
+    # Send telemetry data
+    telemetry_client.flush()
     return HttpResponse(
         body=json_data,
         mimetype="application/json"
