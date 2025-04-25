@@ -11,9 +11,20 @@ from marshmallow import Schema, INCLUDE, EXCLUDE
 from marshmallow.fields import Integer, String, Boolean, List
 from marshmallow.exceptions import ValidationError
 
-from opencensus.ext.azure.trace_exporter import AzureExporter
+#from opencensus.ext.azure.trace_exporter import AzureExporter
 #from opencensus.trace import Tracer
 #from opencensus.trace.samplers import ProbabilitySampler
+
+from applicationinsights import TelemetryClient
+
+# Initialize the Telemetry Client
+telemetry_client = TelemetryClient()
+
+class CustomTelemetryInitializer:
+    def initialize(self, telemetry, request):
+        # Add custom information from the request to customDimensions
+        telemetry.context.custom_dimensions['query_params'] = request.params,
+        telemetry.context.custom_dimensions['route_params'] = request.route_params
 
 class LatestCollectionsSchema(Schema):
     flag_recent_updates = Boolean(data_key='flag-recent-updates', required=False)
@@ -54,37 +65,20 @@ class GeomColSchema(GeomSchema, ColSchema):
 class LimitGeomColSchema(LimitSchema, GeomSchema, ColSchema):
     wkt = String(data_key='wkt', required=True)
 
-# Set up the Application Insights exporter
-connectionString = 'InstrumentationKey=b4b97b45-708f-41fd-85cc-e2cb6d02acd6;IngestionEndpoint=https://ukwest-0.in.applicationinsights.azure.com/;LiveEndpoint=https://ukwest.livediagnostics.monitor.azure.com/;ApplicationId=58c28959-ee48-40b9-b631-e52e2f986470'
-exporter = AzureExporter(connection_string=connectionString)
-
-# Create a global dictionary to hold request-specific properties (to be enriched dynamically)
-dynamic_properties = {'test': 'test'}
-
-def enrich_telemetry(envelope):
-    """
-    Enrich telemetry with dynamic custom dimensions.
-    This function is invoked for every telemetry item.
-    """
-    if envelope.data.base_type == 'RequestData':
-        # Add dynamic properties to the request's custom dimensions
-        envelope.data.base_data.properties.update(dynamic_properties)
-
-# Attach the telemetry processor to the exporter
-exporter.add_telemetry_processor(enrich_telemetry)
-
 @app.function_name('http_latest_collections')
 @app.route("catalyst/features/latest-collections")
 def http_latest_collections(req: HttpRequest) -> HttpResponse:
 
-    global dynamic_properties
-    dynamic_properties = {
-        "URL": req.url,
-        "Params": req.params,
-        "Route_Params": req.route_params
-    }
+    initializer = CustomTelemetryInitializer()
 
-    # Create a tracer for distributed tracing
+    # Create a telemetry object for the event
+    telemetry = telemetry_client.track_event('HttpTriggerEvent')
+
+    # Initialize the telemetry with request information
+    initializer.initialize(telemetry, req)
+
+    # Send telemetry data
+    telemetry_client.flush()
     # tracer = Tracer(exporter=exporter, sampler=ProbabilitySampler(1.0))
     # logger.info({
     #     "URL": req.url,
@@ -132,12 +126,16 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
 @app.function_name('http_latest_single_col')
 @app.route("catalyst/features/latest-collections/{collection}")
 def http_latest_single_col(req: HttpRequest) -> HttpResponse:
-    global dynamic_properties
-    dynamic_properties = {
-        "URL": req.url,
-        "Params": req.params,
-        "Route_Params": req.route_params
-    }
+    initializer = CustomTelemetryInitializer()
+
+    # Create a telemetry object for the event
+    telemetry = telemetry_client.track_event('HttpTriggerEvent')
+
+    # Initialize the telemetry with request information
+    initializer.initialize(telemetry, req)
+
+    # Send telemetry data
+    telemetry_client.flush()
     if req.method != 'GET':
         code = 405
         error_body = json.dumps({
@@ -184,12 +182,16 @@ def delistify(params: dict):
             params[k] = v[0]
 
 def construct_response(req: HttpRequest, schema_class: type, func: callable) -> HttpResponse:
-    global dynamic_properties
-    dynamic_properties = {
-        "URL": req.url,
-        "Params": req.params,
-        "Route_Params": req.route_params
-    }
+    initializer = CustomTelemetryInitializer()
+
+    # Create a telemetry object for the event
+    telemetry = telemetry_client.track_event('HttpTriggerEvent')
+
+    # Initialize the telemetry with request information
+    initializer.initialize(telemetry, req)
+
+    # Send telemetry data
+    telemetry_client.flush()
     try:
         if req.method != 'GET':
             code = 405
