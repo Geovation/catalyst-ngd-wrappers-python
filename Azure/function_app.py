@@ -1,5 +1,5 @@
 import azure.functions as func
-from azure.functions import HttpRequest, HttpResponse, HttpMethod
+from azure.functions import HttpRequest, HttpResponse
 import logging
 from NGD_API_Wrappers import *
 import json
@@ -10,6 +10,10 @@ app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 from marshmallow import Schema, INCLUDE, EXCLUDE
 from marshmallow.fields import Integer, String, Boolean, List
 from marshmallow.exceptions import ValidationError
+
+from opencensus.ext.azure.trace_exporter import AzureExporter
+#from opencensus.trace import Tracer
+#from opencensus.trace.samplers import ProbabilitySampler
 
 class LatestCollectionsSchema(Schema):
     flag_recent_updates = Boolean(data_key='flag-recent-updates', required=False)
@@ -49,10 +53,6 @@ class GeomColSchema(GeomSchema, ColSchema):
 
 class LimitGeomColSchema(LimitSchema, GeomSchema, ColSchema):
     wkt = String(data_key='wkt', required=True)
-
-from opencensus.ext.azure.trace_exporter import AzureExporter
-from opencensus.trace import Tracer
-from opencensus.trace.samplers import ProbabilitySampler
 
 # Set up the Application Insights exporter
 connectionString = 'InstrumentationKey=b4b97b45-708f-41fd-85cc-e2cb6d02acd6;IngestionEndpoint=https://ukwest-0.in.applicationinsights.azure.com/;LiveEndpoint=https://ukwest.livediagnostics.monitor.azure.com/;ApplicationId=58c28959-ee48-40b9-b631-e52e2f986470'
