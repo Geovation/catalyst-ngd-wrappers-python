@@ -55,10 +55,11 @@ from opencensus.trace import Tracer
 from opencensus.trace.samplers import ProbabilitySampler
 
 # Set up the Application Insights exporter
-exporter = AzureExporter(connection_string="InstrumentationKey=<YOUR_INSTRUMENTATION_KEY>")
+connectionString = 'InstrumentationKey=b4b97b45-708f-41fd-85cc-e2cb6d02acd6;IngestionEndpoint=https://ukwest-0.in.applicationinsights.azure.com/;LiveEndpoint=https://ukwest.livediagnostics.monitor.azure.com/;ApplicationId=58c28959-ee48-40b9-b631-e52e2f986470'
+exporter = AzureExporter(connection_string=connectionString)
 
 # Create a global dictionary to hold request-specific properties (to be enriched dynamically)
-dynamic_properties = {}
+dynamic_properties = dict()
 
 def enrich_telemetry(envelope):
     """
@@ -75,11 +76,21 @@ exporter.add_telemetry_processor(enrich_telemetry)
 @app.function_name('http_latest_collections')
 @app.route("catalyst/features/latest-collections")
 def http_latest_collections(req: HttpRequest) -> HttpResponse:
-    logger.info({
+
+    global dynamic_properties
+    dynamic_properties = {
         "URL": req.url,
         "Params": req.params,
         "Route_Params": req.route_params
-    })
+    }
+
+    # Create a tracer for distributed tracing
+    # tracer = Tracer(exporter=exporter, sampler=ProbabilitySampler(1.0))
+    # logger.info({
+    #     "URL": req.url,
+    #     "Params": req.params,
+    #     "Route_Params": req.route_params
+    # })
     if req.method != 'GET':
         code = 405
         error_body = json.dumps({
@@ -121,13 +132,12 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
 @app.function_name('http_latest_single_col')
 @app.route("catalyst/features/latest-collections/{collection}")
 def http_latest_single_col(req: HttpRequest) -> HttpResponse:
-    logger.info("Request received", extra={
-        "custom_dimensions": {
-            "URL": req.url,
-            "Params": req.params,
-            "Route_Params": req.route_params
-        }
-    })
+    global dynamic_properties
+    dynamic_properties = {
+        "URL": req.url,
+        "Params": req.params,
+        "Route_Params": req.route_params
+    }
     if req.method != 'GET':
         code = 405
         error_body = json.dumps({
@@ -174,11 +184,12 @@ def delistify(params: dict):
             params[k] = v[0]
 
 def construct_response(req: HttpRequest, schema_class: type, func: callable) -> HttpResponse:
-    logger.info({
+    global dynamic_properties
+    dynamic_properties = {
         "URL": req.url,
         "Params": req.params,
         "Route_Params": req.route_params
-    })
+    }
     try:
         if req.method != 'GET':
             code = 405
