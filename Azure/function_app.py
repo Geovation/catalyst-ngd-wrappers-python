@@ -59,7 +59,7 @@ connectionString = 'InstrumentationKey=b4b97b45-708f-41fd-85cc-e2cb6d02acd6;Inge
 exporter = AzureExporter(connection_string=connectionString)
 
 # Create a global dictionary to hold request-specific properties (to be enriched dynamically)
-dynamic_properties = dict()
+dynamic_properties = {'test': 'test'}
 
 def enrich_telemetry(envelope):
     """
