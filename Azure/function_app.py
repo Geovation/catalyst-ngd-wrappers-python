@@ -4,38 +4,38 @@ from NGD_API_Wrappers import *
 import json
 
 # Import the necessary packages.
-from azure.monitor.opentelemetry import configure_azure_monitor
-from opentelemetry import traced
+# from azure.monitor.opentelemetry import configure_azure_monitor
+# from opentelemetry import traced
 
-# Create a SpanEnrichingProcessor instance.
-span_enrich_processor = SpanEnrichingProcessor()
+# # Create a SpanEnrichingProcessor instance.
+# span_enrich_processor = SpanEnrichingProcessor()
 
-# Configure OpenTelemetry to use Azure Monitor with the specified connection string.
-# Replace `<your-connection-string>` with the connection string to your Azure Monitor Application Insights resource.
-configure_azure_monitor(
-    connection_string="InstrumentationKey=b4b97b45-708f-41fd-85cc-e2cb6d02acd6;IngestionEndpoint=https://ukwest-0.in.applicationinsights.azure.com/;LiveEndpoint=https://ukwest.livediagnostics.monitor.azure.com/;ApplicationId=58c28959-ee48-40b9-b631-e52e2f986470",
-    # Configure the custom span processors to include span enrich processor.
-    span_processors=[span_enrich_processor],
-)
+# # Configure OpenTelemetry to use Azure Monitor with the specified connection string.
+# # Replace `<your-connection-string>` with the connection string to your Azure Monitor Application Insights resource.
+# configure_azure_monitor(
+#     connection_string="InstrumentationKey=b4b97b45-708f-41fd-85cc-e2cb6d02acd6;IngestionEndpoint=https://ukwest-0.in.applicationinsights.azure.com/;LiveEndpoint=https://ukwest.livediagnostics.monitor.azure.com/;ApplicationId=58c28959-ee48-40b9-b631-e52e2f986470",
+#     # Configure the custom span processors to include span enrich processor.
+#     span_processors=[span_enrich_processor],
+# )
 
-app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
+# app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
 from marshmallow import Schema, INCLUDE, EXCLUDE
 from marshmallow.fields import Integer, String, Boolean, List
 from marshmallow.exceptions import ValidationError
 
 # Import the SpanProcessor class from the opentelemetry.sdk.trace module.
-from opentelemetry.sdk.trace import SpanProcessor
+# from opentelemetry.sdk.trace import SpanProcessor
 
-class SpanEnrichingProcessor(SpanProcessor):
+# class SpanEnrichingProcessor(SpanProcessor):
 
-    def on_end(self, span):
-        # Prefix the span name with the string "Updated-".
-        span._name = "Updated-" + span.name
-        # Add the custom dimension "CustomDimension1" with the value "Value1".
-        span._attributes["CustomDimension1"] = "Value1"
-         # Add the custom dimension "CustomDimension2" with the value "Value2".
-        span._attributes["CustomDimension2"] = "Value2"
+#     def on_end(self, span):
+#         # Prefix the span name with the string "Updated-".
+#         span._name = "Updated-" + span.name
+#         # Add the custom dimension "CustomDimension1" with the value "Value1".
+#         span._attributes["CustomDimension1"] = "Value1"
+#          # Add the custom dimension "CustomDimension2" with the value "Value2".
+#         span._attributes["CustomDimension2"] = "Value2"
 
 class LatestCollectionsSchema(Schema):
     flag_recent_updates = Boolean(data_key='flag-recent-updates', required=False)
