@@ -4,8 +4,8 @@ from NGD_API_Wrappers import *
 import json
 
 # Import the necessary packages.
-# from azure.monitor.opentelemetry import configure_azure_monitor
-# from opentelemetry import traced
+from azure.monitor.opentelemetry import configure_azure_monitor
+from opentelemetry import traced
 
 # # Create a SpanEnrichingProcessor instance.
 # span_enrich_processor = SpanEnrichingProcessor()
