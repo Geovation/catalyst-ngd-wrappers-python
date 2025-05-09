@@ -5,15 +5,15 @@ import json
 
 from opentelemetry.sdk.trace import SpanProcessor
 
-# class SpanEnrichingProcessor(SpanProcessor):
+class SpanEnrichingProcessor(SpanProcessor):
 
-#     def on_end(self, span):
-#         # Prefix the span name with the string "Updated-".
-#         span._name = "Updated-" + span.name
-#         # Add the custom dimension "CustomDimension1" with the value "Value1".
-#         span._attributes["CustomDimension1"] = "Value1"
-#          # Add the custom dimension "CustomDimension2" with the value "Value2".
-#         span._attributes["CustomDimension2"] = "Value2"
+    def on_end(self, span):
+        # Prefix the span name with the string "Updated-".
+        span._name = "Updated-" + span.name
+        # Add the custom dimension "CustomDimension1" with the value "Value1".
+        span._attributes["CustomDimension1"] = "Value1"
+         # Add the custom dimension "CustomDimension2" with the value "Value2".
+        span._attributes["CustomDimension2"] = "Value2"
 
 # Import the necessary packages.
 from azure.monitor.opentelemetry import configure_azure_monitor
