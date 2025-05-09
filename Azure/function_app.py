@@ -8,7 +8,7 @@ from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry import traced
 
 # # Create a SpanEnrichingProcessor instance.
-# span_enrich_processor = SpanEnrichingProcessor()
+span_enrich_processor = SpanEnrichingProcessor()
 
 # # Configure OpenTelemetry to use Azure Monitor with the specified connection string.
 # # Replace `<your-connection-string>` with the connection string to your Azure Monitor Application Insights resource.
