@@ -19,16 +19,16 @@ class SpanEnrichingProcessor(SpanProcessor):
 from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry import trace
 
-# # Create a SpanEnrichingProcessor instance.
-# span_enrich_processor = SpanEnrichingProcessor()
+# Create a SpanEnrichingProcessor instance.
+span_enrich_processor = SpanEnrichingProcessor()
 
-# # Configure OpenTelemetry to use Azure Monitor with the specified connection string.
-# # Replace `<your-connection-string>` with the connection string to your Azure Monitor Application Insights resource.
-# configure_azure_monitor(
-#     connection_string="InstrumentationKey=b4b97b45-708f-41fd-85cc-e2cb6d02acd6;IngestionEndpoint=https://ukwest-0.in.applicationinsights.azure.com/;LiveEndpoint=https://ukwest.livediagnostics.monitor.azure.com/;ApplicationId=58c28959-ee48-40b9-b631-e52e2f986470",
-#     # Configure the custom span processors to include span enrich processor.
-#     span_processors=[span_enrich_processor],
-# )
+# Configure OpenTelemetry to use Azure Monitor with the specified connection string.
+# Replace `<your-connection-string>` with the connection string to your Azure Monitor Application Insights resource.
+configure_azure_monitor(
+    connection_string="InstrumentationKey=b4b97b45-708f-41fd-85cc-e2cb6d02acd6;IngestionEndpoint=https://ukwest-0.in.applicationinsights.azure.com/;LiveEndpoint=https://ukwest.livediagnostics.monitor.azure.com/;ApplicationId=58c28959-ee48-40b9-b631-e52e2f986470",
+    # Configure the custom span processors to include span enrich processor.
+    span_processors=[span_enrich_processor],
+)
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
