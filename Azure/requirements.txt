@@ -8,3 +8,5 @@ flask-marshmallow==1.3.0
 azure-functions==1.21.3
 applicationinsights==0.11.10
 opentelemetry-sdk==3.21.0
+opentelemetry-api==1.32.1
+opencensus-ext-azure
