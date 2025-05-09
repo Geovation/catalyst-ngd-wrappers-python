@@ -17,7 +17,7 @@ from opentelemetry.sdk.trace import SpanProcessor
 
 # Import the necessary packages.
 from azure.monitor.opentelemetry import configure_azure_monitor
-from opentelemetry import traced
+from opentelemetry import trace
 
 # # Create a SpanEnrichingProcessor instance.
 # span_enrich_processor = SpanEnrichingProcessor()
