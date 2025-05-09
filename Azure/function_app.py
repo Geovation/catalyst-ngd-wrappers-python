@@ -1,30 +1,25 @@
 import azure.functions as func
 from azure.functions import HttpRequest, HttpResponse
-import logging
 from NGD_API_Wrappers import *
 import json
 
+import logging
+from opencensus.ext.azure.log_exporter import AzureLogHandler
+
 logger = logging.getLogger(__name__)
+
+def callback_function(envelope):
+    envelope.data.baseData.message += " - Custom message"
+
+handler = AzureLogHandler(connection_string='InstrumentationKey=<your-instrumentation_key-here>')
+handler.add_telemetry_processor(callback_function)
+logger.addHandler(handler)
+
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
 from marshmallow import Schema, INCLUDE, EXCLUDE
 from marshmallow.fields import Integer, String, Boolean, List
 from marshmallow.exceptions import ValidationError
-
-#from opencensus.ext.azure.trace_exporter import AzureExporter
-#from opencensus.trace import Tracer
-#from opencensus.trace.samplers import ProbabilitySampler
-
-from applicationinsights import TelemetryClient
-
-# Initialize the Telemetry Client
-telemetry_client = TelemetryClient('b4b97b45-708f-41fd-85cc-e2cb6d02acd6')
-
-class CustomTelemetryInitializer:
-    def initialize(self, telemetry, request):
-        # Add custom information from the request to customDimensions
-        telemetry.context.custom_dimensions['query_params'] = request.params,
-        telemetry.context.custom_dimensions['route_params'] = request.route_params
 
 class LatestCollectionsSchema(Schema):
     flag_recent_updates = Boolean(data_key='flag-recent-updates', required=False)
@@ -69,20 +64,6 @@ class LimitGeomColSchema(LimitSchema, GeomSchema, ColSchema):
 @app.route("catalyst/features/latest-collections")
 def http_latest_collections(req: HttpRequest) -> HttpResponse:
 
-    initializer = CustomTelemetryInitializer()
-
-    # Create a telemetry object for the event
-    telemetry = telemetry_client.track_event('HttpTriggerEvent')
-
-    # Initialize the telemetry with request information
-    initializer.initialize(telemetry, req)
-
-    # tracer = Tracer(exporter=exporter, sampler=ProbabilitySampler(1.0))
-    # logger.info({
-    #     "URL": req.url,
-    #     "Params": req.params,
-    #     "Route_Params": req.route_params
-    # })
     if req.method != 'GET':
         code = 405
         error_body = json.dumps({
@@ -117,8 +98,6 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
     data = get_latest_collection_versions(**parsed_params)
     json_data = json.dumps(data)
 
-    # Send telemetry data
-    telemetry_client.flush()
     return HttpResponse(
         body=json_data,
         mimetype="application/json"
@@ -127,13 +106,6 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
 @app.function_name('http_latest_single_col')
 @app.route("catalyst/features/latest-collections/{collection}")
 def http_latest_single_col(req: HttpRequest) -> HttpResponse:
-    initializer = CustomTelemetryInitializer()
-
-    # Create a telemetry object for the event
-    telemetry = telemetry_client.track_event('HttpTriggerEvent')
-
-    # Initialize the telemetry with request information
-    initializer.initialize(telemetry, req)
 
     if req.method != 'GET':
         code = 405
@@ -169,8 +141,7 @@ def http_latest_single_col(req: HttpRequest) -> HttpResponse:
 
     data = get_specific_latest_collections([collection], **parsed_params)
     json_data = json.dumps(data)
-    # Send telemetry data
-    telemetry_client.flush()
+
     return HttpResponse(
         body=json_data,
         mimetype="application/json"
@@ -182,16 +153,7 @@ def delistify(params: dict):
             params[k] = v[0]
 
 def construct_response(req: HttpRequest, schema_class: type, func: callable) -> HttpResponse:
-    initializer = CustomTelemetryInitializer()
 
-    # Create a telemetry object for the event
-    telemetry = telemetry_client.track_event('HttpTriggerEvent')
-
-    # Initialize the telemetry with request information
-    initializer.initialize(telemetry, req)
-
-    # Send telemetry data
-    telemetry_client.flush()
     try:
         if req.method != 'GET':
             code = 405
