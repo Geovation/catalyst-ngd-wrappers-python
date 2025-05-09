@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 def callback_function(envelope):
     envelope.data.baseData.message += " - Custom message"
 
-handler = AzureLogHandler(connection_string='InstrumentationKey=<your-instrumentation_key-here>')
+handler = AzureLogHandler(connection_string='InstrumentationKey=b4b97b45-708f-41fd-85cc-e2cb6d02acd6')
 handler.add_telemetry_processor(callback_function)
 logger.addHandler(handler)
 
