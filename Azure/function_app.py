@@ -4,20 +4,18 @@ from NGD_API_Wrappers import *
 import json
 
 from opentelemetry.sdk.trace import SpanProcessor
-
-class SpanEnrichingProcessor(SpanProcessor):
-
-    def on_end(self, span):
-        # Prefix the span name with the string "Updated-".
-        span._name = "Updated-" + span.name
-        # Add the custom dimension "CustomDimension1" with the value "Value1".
-        span._attributes["CustomDimension1"] = "Value1"
-         # Add the custom dimension "CustomDimension2" with the value "Value2".
-        span._attributes["CustomDimension2"] = "Value2"
-
-# Import the necessary packages.
 from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry import trace
+
+class SpanEnrichingProcessor(SpanProcessor):
+    def on_end(self, span):
+        # Check if the span has been created
+        if span.is_recording():
+            # Prefix the span name
+            span.name = "Updated-" + span.name
+            # Set custom dimensions
+            span.set_attribute("CustomDimension1", "Value1")
+            span.set_attribute("CustomDimension2", "Value2")
 
 # Create a SpanEnrichingProcessor instance.
 span_enrich_processor = SpanEnrichingProcessor()
