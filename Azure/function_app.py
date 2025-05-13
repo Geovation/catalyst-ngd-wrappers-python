@@ -42,15 +42,6 @@ tracer = Tracer(
     propagator=TraceContextPropagator()
 )
 
-
-def main(req: func.HttpRequest) -> func.HttpResponse:
-    # Initialize telemetry if needed
-    telemetry_config = TelemetryConfiguration.active
-    telemetry_config.telemetry_initializers.append(CustomTelemetry())
-    
-    # Your function logic here
-    return func.HttpResponse("Hello, World!")
-
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
 from marshmallow import Schema, INCLUDE, EXCLUDE
@@ -418,16 +409,6 @@ def http_auth_geom_col(req: HttpRequest) -> HttpResponse:
         req,
         LimitColSchema,
         items_auth_limit_col
-    )
-    return response
-
-@app.function_name('http_auth_geom_col')
-@app.route("catalyst/features/multi-collection/items/auth-geom-col")
-def http_auth_geom_col(req: HttpRequest) -> HttpResponse:
-    response = construct_response(
-        req,
-        GeomColSchema,
-        items_auth_geom_col
     )
     return response
 
