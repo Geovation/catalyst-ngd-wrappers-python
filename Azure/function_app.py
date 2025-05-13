@@ -109,7 +109,7 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
     logging.info(f"Current span: {current_span}")
 
     current_span.set_attribute("test", "test")
-    current_span.add_attribute("tes2", "test2")
+    #current_span.add_attribute("tes2", "test2")
     #span.add_attribute('exampleProperty', 'exampleValue')
 
     return HttpResponse(
