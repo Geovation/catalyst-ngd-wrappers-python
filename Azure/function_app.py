@@ -69,53 +69,54 @@ class LimitGeomColSchema(LimitSchema, GeomSchema, ColSchema):
 @app.route("catalyst/features/latest-collections")
 def http_latest_collections(req: HttpRequest) -> HttpResponse:
 
-    #with tracer.span(name="main") as span:
+    with tracer.start_as_current_span("request-span") as span:
 
-    if req.method != 'GET':
-        code = 405
-        error_body = json.dumps({
-            "code": code,
-            "description": "The HTTP method requested is not supported. This endpoint only supports 'GET' requests.",
-            "errorSource": "Catalyst Wrapper"
-        })
+        if req.method != 'GET':
+            code = 405
+            error_body = json.dumps({
+                "code": code,
+                "description": "The HTTP method requested is not supported. This endpoint only supports 'GET' requests.",
+                "errorSource": "Catalyst Wrapper"
+            })
+            return HttpResponse(
+                body=error_body,
+                mimetype="application/json",
+                status_code=code
+            )
+
+        schema = LatestCollectionsSchema()
+
+        params = {**req.params}
+        try:
+            parsed_params = schema.load(params)
+        except ValidationError as e:
+            code = 400
+            error_body = json.dumps({
+                "code": code,
+                "description": str(e),
+                "errorSource": "Catalyst Wrapper"
+            })
+            return HttpResponse(
+                error_body,
+                mimetype="application/json",
+                status_code=400
+            )
+
+        data = get_latest_collection_versions(**parsed_params)
+        json_data = json.dumps(data)
+
+        logging.info(f"Current span: {span}")
+
+        span.set_attribute("Name", "test")
+        span.set_attribute("http.url", "https://example.com")
+        span.set_attribute("http.params", "test")
+        #current_span.add_attribute("tes2", "test2")
+        #span.add_attribute('exampleProperty', 'exampleValue')
+
         return HttpResponse(
-            body=error_body,
-            mimetype="application/json",
-            status_code=code
+            body=json_data,
+            mimetype="application/json"
         )
-
-    schema = LatestCollectionsSchema()
-
-    params = {**req.params}
-    try:
-        parsed_params = schema.load(params)
-    except ValidationError as e:
-        code = 400
-        error_body = json.dumps({
-            "code": code,
-            "description": str(e),
-            "errorSource": "Catalyst Wrapper"
-        })
-        return HttpResponse(
-            error_body,
-            mimetype="application/json",
-            status_code=400
-        )
-
-    data = get_latest_collection_versions(**parsed_params)
-    json_data = json.dumps(data)
-
-    current_span = trace.get_current_span()
-    logging.info(f"Current span: {current_span}")
-
-    current_span.set_attribute("Name", "test")
-    #current_span.add_attribute("tes2", "test2")
-    #span.add_attribute('exampleProperty', 'exampleValue')
-
-    return HttpResponse(
-        body=json_data,
-        mimetype="application/json"
-    )
 
 @app.function_name('http_latest_single_col')
 @app.route("catalyst/features/latest-collections/{collection}")
