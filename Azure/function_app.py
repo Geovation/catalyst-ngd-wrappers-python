@@ -22,7 +22,7 @@ class CustomTelemetryProcessor:
     def process(self, envelope):
         if isinstance(envelope, Envelope) and envelope.data.baseType == 'RequestData':
             request_data = envelope.data.baseData
-            print(request_data.url)
+            request_data.url
             #query_parameters = utils.get_query_parameters(request_data.url)
             #if query_parameters:
                 #request_data.properties['QueryParameters'] = query_parameters
@@ -31,13 +31,13 @@ class CustomTelemetryProcessor:
 
 # Initialize the Azure Log Handler with the custom telemetry processor
 handler = AzureLogHandler(
-    connection_string='InstrumentationKey=YOUR_INSTRUMENTATION_KEY',
+    connection_string='InstrumentationKey=b4b97b45-708f-41fd-85cc-e2cb6d02acd6',
     processor=CustomTelemetryProcessor()
 )
 
 # Configure the tracer
 tracer = Tracer(
-    exporter=AzureExporter(connection_string='InstrumentationKey=YOUR_INSTRUMENTATION_KEY'),
+    exporter=AzureExporter(connection_string='InstrumentationKey=b4b97b45-708f-41fd-85cc-e2cb6d02acd6'),
     sampler=ProbabilitySampler(1.0),
     propagator=TraceContextPropagator()
 )
