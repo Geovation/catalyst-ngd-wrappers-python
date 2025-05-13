@@ -1,3 +1,4 @@
+import logging
 import azure.functions as func
 from azure.functions import HttpRequest, HttpResponse
 from NGD_API_Wrappers import *
@@ -8,13 +9,6 @@ from opencensus.ext.azure.log_exporter import AzureLogHandler
 from opencensus.ext.azure.trace_exporter import AzureExporter
 from opencensus.trace.samplers import ProbabilitySampler
 from opencensus.trace.tracer import Tracer
-from opencensus.trace import config_integration
-from opencensus.trace.propagation.trace_context_http_header_format import TraceContextPropagator
-from opencensus.trace.tracers.noop_tracer import NoopTracer
-from opencensus.ext.azure.common import utils
-from opencensus.ext.azure.common.protocol import Envelope
-from opencensus.ext.azure.common.transport import TransportMixin
-
 
 
 instrumentation_key = 'b4b97b45-708f-41fd-85cc-e2cb6d02acd6'
