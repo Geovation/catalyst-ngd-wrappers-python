@@ -69,7 +69,7 @@ class LimitGeomColSchema(LimitSchema, GeomSchema, ColSchema):
 @app.route("catalyst/features/latest-collections")
 def http_latest_collections(req: HttpRequest) -> HttpResponse:
 
-    with tracer.start_as_current_span("request-span") as span:
+    with tracer.span(name='parent'):
 
         if req.method != 'GET':
             code = 405
