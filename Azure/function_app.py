@@ -105,7 +105,7 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
     data = get_latest_collection_versions(**parsed_params)
     json_data = json.dumps(data)
 
-    current_span = trace.get_current_span()l
+    current_span = trace.get_current_span()
     logging.info(f"Current span: {current_span}")
 
     current_span.set_attribute("test", "test")
