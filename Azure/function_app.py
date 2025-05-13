@@ -22,10 +22,7 @@ class CustomTelemetryProcessor:
     def process(self, envelope):
         if isinstance(envelope, Envelope) and envelope.data.baseType == 'RequestData':
             request_data = envelope.data.baseData
-            request_data.url
-            #query_parameters = utils.get_query_parameters(request_data.url)
-            #if query_parameters:
-                #request_data.properties['QueryParameters'] = query_parameters
+            request_data.properties['QueryParameters'] = 'test'
         if self.next_processor:
             self.next_processor.process(envelope)
 
