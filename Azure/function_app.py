@@ -10,7 +10,6 @@ from opencensus.ext.azure.trace_exporter import AzureExporter
 from opencensus.trace.samplers import ProbabilitySampler
 from opencensus.trace.tracer import Tracer
 
-
 instrumentation_key = 'b4b97b45-708f-41fd-85cc-e2cb6d02acd6'
 handler = AzureLogHandler(connection_string=f'InstrumentationKey={instrumentation_key}')
 logger = logging.getLogger(__name__)
@@ -19,26 +18,12 @@ logger.addHandler(handler)
 exporter = AzureExporter(connection_string=f'InstrumentationKey={instrumentation_key}')
 tracer = Tracer(exporter=exporter, sampler=ProbabilitySampler(1.0))
 
-
-
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
 from marshmallow import Schema, INCLUDE, EXCLUDE
 from marshmallow.fields import Integer, String, Boolean, List
 from marshmallow.exceptions import ValidationError
 
-# Import the SpanProcessor class from the opentelemetry.sdk.trace module.
-# from opentelemetry.sdk.trace import SpanProcessor
-
-# class SpanEnrichingProcessor(SpanProcessor):
-
-#     def on_end(self, span):
-#         # Prefix the span name with the string "Updated-".
-#         span._name = "Updated-" + span.name
-#         # Add the custom dimension "CustomDimension1" with the value "Value1".
-#         span._attributes["CustomDimension1"] = "Value1"
-#          # Add the custom dimension "CustomDimension2" with the value "Value2".
-#         span._attributes["CustomDimension2"] = "Value2"
 
 class LatestCollectionsSchema(Schema):
     flag_recent_updates = Boolean(data_key='flag-recent-updates', required=False)
