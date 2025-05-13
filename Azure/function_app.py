@@ -3,30 +3,53 @@ from azure.functions import HttpRequest, HttpResponse
 from NGD_API_Wrappers import *
 import json
 
-from opentelemetry.sdk.trace import SpanProcessor
-from azure.monitor.opentelemetry import configure_azure_monitor
-from opentelemetry import trace
 
-class SpanEnrichingProcessor(SpanProcessor):
-    def on_end(self, span):
-        # Check if the span has been created
-        if span.is_recording():
-            # Prefix the span name
-            span.name = "Updated-" + span.name
-            # Set custom dimensions
-            span.set_attribute("CustomDimension1", "Value1")
-            span.set_attribute("CustomDimension2", "Value2")
+from opencensus.ext.azure.log_exporter import AzureLogHandler
+from opencensus.ext.azure.trace_exporter import AzureExporter
+from opencensus.trace.samplers import ProbabilitySampler
+from opencensus.trace.tracer import Tracer
+from opencensus.trace import config_integration
+from opencensus.trace.propagation.trace_context_http_header_format import TraceContextPropagator
+from opencensus.trace.tracers.noop_tracer import NoopTracer
+from opencensus.ext.azure.common import utils
+from opencensus.ext.azure.common.protocol import Envelope
+from opencensus.ext.azure.common.transport import TransportMixin
 
-# Create a SpanEnrichingProcessor instance.
-span_enrich_processor = SpanEnrichingProcessor()
+class CustomTelemetryProcessor:
+    def __init__(self, next_processor=None):
+        self.next_processor = next_processor
 
-# Configure OpenTelemetry to use Azure Monitor with the specified connection string.
-# Replace `<your-connection-string>` with the connection string to your Azure Monitor Application Insights resource.
-configure_azure_monitor(
-    connection_string="InstrumentationKey=b4b97b45-708f-41fd-85cc-e2cb6d02acd6;IngestionEndpoint=https://ukwest-0.in.applicationinsights.azure.com/;LiveEndpoint=https://ukwest.livediagnostics.monitor.azure.com/;ApplicationId=58c28959-ee48-40b9-b631-e52e2f986470",
-    # Configure the custom span processors to include span enrich processor.
-    span_processors=[span_enrich_processor],
+    def process(self, envelope):
+        if isinstance(envelope, Envelope) and envelope.data.baseType == 'RequestData':
+            request_data = envelope.data.baseData
+            print(request_data.url)
+            #query_parameters = utils.get_query_parameters(request_data.url)
+            #if query_parameters:
+                #request_data.properties['QueryParameters'] = query_parameters
+        if self.next_processor:
+            self.next_processor.process(envelope)
+
+# Initialize the Azure Log Handler with the custom telemetry processor
+handler = AzureLogHandler(
+    connection_string='InstrumentationKey=YOUR_INSTRUMENTATION_KEY',
+    processor=CustomTelemetryProcessor()
 )
+
+# Configure the tracer
+tracer = Tracer(
+    exporter=AzureExporter(connection_string='InstrumentationKey=YOUR_INSTRUMENTATION_KEY'),
+    sampler=ProbabilitySampler(1.0),
+    propagator=TraceContextPropagator()
+)
+
+
+def main(req: func.HttpRequest) -> func.HttpResponse:
+    # Initialize telemetry if needed
+    telemetry_config = TelemetryConfiguration.active
+    telemetry_config.telemetry_initializers.append(CustomTelemetry())
+    
+    # Your function logic here
+    return func.HttpResponse("Hello, World!")
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
