@@ -15,17 +15,16 @@ from opencensus.ext.azure.common import utils
 from opencensus.ext.azure.common.protocol import Envelope
 from opencensus.ext.azure.common.transport import TransportMixin
 
-def callback_function(envelope):
-    envelope.data.baseData.properties['os_type'] = 'linux'
-    return True
 
 
-exporter = AzureExporter(
-    connection_string='InstrumentationKey=b4b97b45-708f-41fd-85cc-e2cb6d02acd6'
-)
-exporter.add_telemetry_processor(callback_function)
+instrumentation_key = 'b4b97b45-708f-41fd-85cc-e2cb6d02acd6'
+handler = AzureLogHandler(connection_string=f'InstrumentationKey={instrumentation_key}')
+logger = logging.getLogger(__name__)
+logger.addHandler(handler)
 
+exporter = AzureExporter(connection_string=f'InstrumentationKey={instrumentation_key}')
 tracer = Tracer(exporter=exporter, sampler=ProbabilitySampler(1.0))
+
 
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
@@ -90,40 +89,43 @@ class LimitGeomColSchema(LimitSchema, GeomSchema, ColSchema):
 @app.route("catalyst/features/latest-collections")
 def http_latest_collections(req: HttpRequest) -> HttpResponse:
 
-    if req.method != 'GET':
-        code = 405
-        error_body = json.dumps({
-            "code": code,
-            "description": "The HTTP method requested is not supported. This endpoint only supports 'GET' requests.",
-            "errorSource": "Catalyst Wrapper"
-        })
-        return HttpResponse(
-            body=error_body,
-            mimetype="application/json",
-            status_code=code
-        )
+    with tracer.span(name="main") as span:
 
-    schema = LatestCollectionsSchema()
+        if req.method != 'GET':
+            code = 405
+            error_body = json.dumps({
+                "code": code,
+                "description": "The HTTP method requested is not supported. This endpoint only supports 'GET' requests.",
+                "errorSource": "Catalyst Wrapper"
+            })
+            return HttpResponse(
+                body=error_body,
+                mimetype="application/json",
+                status_code=code
+            )
 
-    params = {**req.params}
-    try:
-        parsed_params = schema.load(params)
-    except ValidationError as e:
-        code = 400
-        error_body = json.dumps({
-            "code": code,
-            "description": str(e),
-            "errorSource": "Catalyst Wrapper"
-        })
-        return HttpResponse(
-            error_body,
-            mimetype="application/json",
-            status_code=400
-        )
+        schema = LatestCollectionsSchema()
 
-    with tracer.span(name='parent'):
+        params = {**req.params}
+        try:
+            parsed_params = schema.load(params)
+        except ValidationError as e:
+            code = 400
+            error_body = json.dumps({
+                "code": code,
+                "description": str(e),
+                "errorSource": "Catalyst Wrapper"
+            })
+            return HttpResponse(
+                error_body,
+                mimetype="application/json",
+                status_code=400
+            )
+
         data = get_latest_collection_versions(**parsed_params)
         json_data = json.dumps(data)
+
+        span.add_attribute('exampleProperty', 'exampleValue')
 
         return HttpResponse(
             body=json_data,
