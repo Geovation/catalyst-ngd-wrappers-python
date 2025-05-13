@@ -15,29 +15,18 @@ from opencensus.ext.azure.common import utils
 from opencensus.ext.azure.common.protocol import Envelope
 from opencensus.ext.azure.common.transport import TransportMixin
 
-class CustomTelemetryProcessor:
-    def __init__(self, next_processor=None):
-        self.next_processor = next_processor
+def callback_function(envelope):
+    envelope.data.baseData.properties['os_type'] = 'linux'
+    return True
 
-    def process(self, envelope):
-        if isinstance(envelope, Envelope) and envelope.data.baseType == 'RequestData':
-            request_data = envelope.data.baseData
-            request_data.properties['QueryParameters'] = 'test'
-        if self.next_processor:
-            self.next_processor.process(envelope)
 
-# Initialize the Azure Log Handler with the custom telemetry processor
-handler = AzureLogHandler(
-    connection_string='InstrumentationKey=b4b97b45-708f-41fd-85cc-e2cb6d02acd6',
-    processor=CustomTelemetryProcessor()
+exporter = AzureExporter(
+    connection_string='InstrumentationKey=b4b97b45-708f-41fd-85cc-e2cb6d02acd6'
 )
+exporter.add_telemetry_processor(callback_function)
 
-# Configure the tracer
-tracer = Tracer(
-    exporter=AzureExporter(connection_string='InstrumentationKey=b4b97b45-708f-41fd-85cc-e2cb6d02acd6'),
-    sampler=ProbabilitySampler(1.0),
-    propagator=TraceContextPropagator()
-)
+tracer = Tracer(exporter=exporter, sampler=ProbabilitySampler(1.0))
+
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
@@ -132,13 +121,14 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
             status_code=400
         )
 
-    data = get_latest_collection_versions(**parsed_params)
-    json_data = json.dumps(data)
+    with tracer.span(name='parent'):
+        data = get_latest_collection_versions(**parsed_params)
+        json_data = json.dumps(data)
 
-    return HttpResponse(
-        body=json_data,
-        mimetype="application/json"
-    )
+        return HttpResponse(
+            body=json_data,
+            mimetype="application/json"
+        )
 
 @app.function_name('http_latest_single_col')
 @app.route("catalyst/features/latest-collections/{collection}")
@@ -176,13 +166,14 @@ def http_latest_single_col(req: HttpRequest) -> HttpResponse:
             status_code=code
         )
 
-    data = get_specific_latest_collections([collection], **parsed_params)
-    json_data = json.dumps(data)
+    with tracer.span(name='parent'):
+        data = get_specific_latest_collections([collection], **parsed_params)
+        json_data = json.dumps(data)
 
-    return HttpResponse(
-        body=json_data,
-        mimetype="application/json"
-    )
+        return HttpResponse(
+            body=json_data,
+            mimetype="application/json"
+        )
 
 def delistify(params: dict):
     for k, v in params.items():
