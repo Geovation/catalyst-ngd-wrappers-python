@@ -3,21 +3,21 @@ import azure.functions as func
 from azure.functions import HttpRequest, HttpResponse
 from NGD_API_Wrappers import *
 import json
+
+
 from opentelemetry import trace
 
+INSTRUMENTATION_KEY = 'b4b97b45-708f-41fd-85cc-e2cb6d02acd6'
+from logging import getLogger
 
-from opencensus.ext.azure.log_exporter import AzureLogHandler
-from opencensus.ext.azure.trace_exporter import AzureExporter
-from opencensus.trace.samplers import ProbabilitySampler
-from opencensus.trace.tracer import Tracer
+from azure.monitor.opentelemetry import configure_azure_monitor
+from opentelemetry import trace
 
-instrumentation_key = ''
-handler = AzureLogHandler(connection_string=f'InstrumentationKey={instrumentation_key}')
-logger = logging.getLogger(__name__)
-logger.addHandler(handler)
+configure_azure_monitor(
+    logger_name=__name__,
+)
 
-exporter = AzureExporter(connection_string=f'InstrumentationKey={instrumentation_key}')
-tracer = Tracer(exporter=exporter, sampler=ProbabilitySampler(1.0))
+logger = getLogger(__name__)
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
@@ -106,9 +106,8 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
     json_data = json.dumps(data)
 
     current_span = trace.get_current_span()
-    logging.info(f"Current span: {current_span}")
 
-    current_span.set_attribute("Name", "test")
+    logger.info("Hello World!", extra={"microsoft.custom_event.name": "test-event-name", "additional_attrs": "val1"})
     #current_span.add_attribute("tes2", "test2")
     #span.add_attribute('exampleProperty', 'exampleValue')
 
