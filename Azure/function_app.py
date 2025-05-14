@@ -8,16 +8,34 @@ import json
 from opentelemetry import trace
 
 INSTRUMENTATION_KEY = 'b4b97b45-708f-41fd-85cc-e2cb6d02acd6'
-from logging import getLogger
+import logging
+from opencensus.ext.azure.log_exporter import AzureLogHandler
+from opencensus.trace.samplers import ProbabilitySampler
+from opencensus.ext.azure.trace_exporter import AzureExporter
+from opencensus.trace.tracer import Tracer
+from opencensus.trace import config_integration
+from opencensus.ext.flask.flask_middleware import FlaskMiddleware
 
-from azure.monitor.opentelemetry import configure_azure_monitor
-from opentelemetry import trace
 
-configure_azure_monitor(
-    logger_name=__name__,
-)
+config_integration.trace_integrations(["requests"])
+config_integration.trace_integrations(["logging"])
 
-logger = getLogger(__name__)
+def callback_add_role_name(envelope):
+    """ Callback function for opencensus """
+    envelope.tags["ai.cloud.role"] = 
+    return True
+
+app_insights_cs = "InstrumentationKey=" + APP_INSIGHTS_KEY
+logger = logging.getLogger(__name__)
+handler = AzureLogHandler(connection_string=app_insights_cs)
+handler.add_telemetry_processor(callback_add_role_name)
+logger.setLevel(logging.INFO)
+logger.addHandler(handler)
+
+azure_exporter = AzureExporter(connection_string=app_insights_cs)
+azure_exporter.add_telemetry_processor(callback_add_role_name)
+
+tracer = Tracer(exporter=azure_exporter, sampler=ProbabilitySampler(1.0))
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
@@ -108,8 +126,6 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
     current_span = trace.get_current_span()
 
     logger.info("Hello World!", extra={"microsoft.custom_event.name": "test-event-name", "additional_attrs": "val1"})
-    #current_span.add_attribute("tes2", "test2")
-    #span.add_attribute('exampleProperty', 'exampleValue')
 
     return HttpResponse(
         body=json_data,
