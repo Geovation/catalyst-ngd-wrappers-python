@@ -8,34 +8,16 @@ import json
 from opentelemetry import trace
 
 INSTRUMENTATION_KEY = 'b4b97b45-708f-41fd-85cc-e2cb6d02acd6'
-import logging
-from opencensus.ext.azure.log_exporter import AzureLogHandler
-from opencensus.trace.samplers import ProbabilitySampler
-from opencensus.ext.azure.trace_exporter import AzureExporter
-from opencensus.trace.tracer import Tracer
-from opencensus.trace import config_integration
-from opencensus.ext.flask.flask_middleware import FlaskMiddleware
+from logging import getLogger
 
+from azure.monitor.opentelemetry import configure_azure_monitor
+from opentelemetry import trace
 
-config_integration.trace_integrations(["requests"])
-config_integration.trace_integrations(["logging"])
+configure_azure_monitor(
+    logger_name=__name__,
+)
 
-def callback_add_role_name(envelope):
-    """ Callback function for opencensus """
-    envelope.tags["ai.cloud.role"] = 
-    return True
-
-app_insights_cs = "InstrumentationKey=" + APP_INSIGHTS_KEY
-logger = logging.getLogger(__name__)
-handler = AzureLogHandler(connection_string=app_insights_cs)
-handler.add_telemetry_processor(callback_add_role_name)
-logger.setLevel(logging.INFO)
-logger.addHandler(handler)
-
-azure_exporter = AzureExporter(connection_string=app_insights_cs)
-azure_exporter.add_telemetry_processor(callback_add_role_name)
-
-tracer = Tracer(exporter=azure_exporter, sampler=ProbabilitySampler(1.0))
+logger = getLogger(__name__)
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
@@ -43,6 +25,7 @@ from marshmallow import Schema, INCLUDE, EXCLUDE
 from marshmallow.fields import Integer, String, Boolean, List
 from marshmallow.exceptions import ValidationError
 
+from opentelemetry.sdk.trace import Event
 
 class LatestCollectionsSchema(Schema):
     flag_recent_updates = Boolean(data_key='flag-recent-updates', required=False)
@@ -124,6 +107,7 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
     json_data = json.dumps(data)
 
     current_span = trace.get_current_span()
+    Event('test-evetn-name', attributes={"microsoft.custom_event.name": "test-event-name", "additional_attrs": "val1"})
 
     logger.info("Hello World!", extra={"microsoft.custom_event.name": "test-event-name", "additional_attrs": "val1"})
 
