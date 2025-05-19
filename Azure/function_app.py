@@ -1,21 +1,15 @@
-import logging
 import azure.functions as func
 from azure.functions import HttpRequest, HttpResponse
 from NGD_API_Wrappers import *
 import json
 
 
-from opentelemetry import trace
-
 INSTRUMENTATION_KEY = 'b4b97b45-708f-41fd-85cc-e2cb6d02acd6'
-from logging import getLogger
 
 from azure.monitor.opentelemetry import configure_azure_monitor
 from azure.monitor.events.extension import track_event
 
-configure_azure_monitor(
-    instrumentation_key=INSTRUMENTATION_KEY
-)
+configure_azure_monitor(instrumentation_key=INSTRUMENTATION_KEY)
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
@@ -66,8 +60,6 @@ class LimitGeomColSchema(LimitSchema, GeomSchema, ColSchema):
 @app.route("catalyst/features/latest-collections")
 def http_latest_collections(req: HttpRequest) -> HttpResponse:
 
-    #with tracer.span(name="main") as span:
-
     if req.method != 'GET':
         code = 405
         error_body = json.dumps({
@@ -102,7 +94,13 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
     data = get_latest_collection_versions(**parsed_params)
     json_data = json.dumps(data)
 
-    track_event("Test event", {"key1": "value1", "key2": "value2"})
+    custom_dimensions = {
+        'URL': req.url,
+        'Method': req.method,
+        'Params': params   
+    }
+
+    track_event('HTTP_Request', custom_dimensions=custom_dimensions)
 
     return HttpResponse(
         body=json_data,
