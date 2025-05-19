@@ -229,6 +229,7 @@ def construct_response(req: HttpRequest, schema_class: type, func: callable) -> 
         json_data = json.dumps(data)
 
         custom_dimensions = {f'query_params.{str(k)}': str(v) for k, v in parsed_params.items()}
+        custom_dimensions.update(f'query_params.{str(k)}': str(v) for k, v in custom_params.items())
         custom_dimensions.pop('key', None)
         custom_dimensions.update({
             'URL': req.url,
