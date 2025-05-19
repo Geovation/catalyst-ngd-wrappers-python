@@ -2,7 +2,7 @@ import requests as r
 import re
 import os
 from datetime import datetime, timedelta
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 from shapely import from_wkt
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon
 from shapely.errors import GEOSException
