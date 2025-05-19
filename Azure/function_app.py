@@ -94,11 +94,10 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
     data = get_latest_collection_versions(**parsed_params)
     json_data = json.dumps(data)
 
-    custom_dimensions = {
+    custom_dimensions = params.update({
         'URL': req.url,
         'Method': req.method,
-        'Params': params   
-    }
+    })
 
     track_event('HTTP_Request', custom_dimensions=custom_dimensions)
 
