@@ -94,7 +94,8 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
     data = get_latest_collection_versions(**parsed_params)
     json_data = json.dumps(data)
 
-    custom_dimensions = {str(k): str(v) for k, v in parsed_params.items()}
+    custom_dimensions = {f'query_params.{str(k)}': str(v) for k, v in parsed_params.items()}
+    custom_dimensions.pop('key', None)
     custom_dimensions.update({
         'URL': req.url,
         'Method': req.method,
@@ -143,14 +144,22 @@ def http_latest_single_col(req: HttpRequest) -> HttpResponse:
             status_code=code
         )
 
-    with tracer.span(name='parent'):
-        data = get_specific_latest_collections([collection], **parsed_params)
-        json_data = json.dumps(data)
+    data = get_specific_latest_collections([collection], **parsed_params)
+    json_data = json.dumps(data)
 
-        return HttpResponse(
-            body=json_data,
-            mimetype="application/json"
-        )
+    custom_dimensions = {f'query_params.{str(k)}': str(v) for k, v in parsed_params.items()}
+    custom_dimensions.pop('key', None)
+    custom_dimensions.update({
+        'URL': req.url,
+        'Method': req.method,
+    })
+
+    track_event('HTTP_Request', custom_dimensions=custom_dimensions)
+
+    return HttpResponse(
+        body=json_data,
+        mimetype="application/json"
+    )
 
 def delistify(params: dict):
     for k, v in params.items():
@@ -218,6 +227,15 @@ def construct_response(req: HttpRequest, schema_class: type, func: callable) -> 
             attributes = ', '.join(fields)
             data['description'] = descr.format(attr=attributes)
         json_data = json.dumps(data)
+
+        custom_dimensions = {f'query_params.{str(k)}': str(v) for k, v in parsed_params.items()}
+        custom_dimensions.pop('key', None)
+        custom_dimensions.update({
+            'URL': req.url,
+            'Method': req.method,
+        })
+
+        track_event('HTTP_Request', custom_dimensions=custom_dimensions)
 
         return HttpResponse(
             body=json_data,
