@@ -13,7 +13,9 @@ from logging import getLogger
 from azure.monitor.opentelemetry import configure_azure_monitor
 from azure.monitor.events.extension import track_event
 
-configure_azure_monitor()
+configure_azure_monitor(
+    instrumentation_key=INSTRUMENTATION_KEY
+)
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
