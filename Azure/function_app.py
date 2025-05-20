@@ -8,7 +8,8 @@ from azure.monitor.events.extension import track_event
 
 #INSTR_KEY = 'b4b97b45-708f-41fd-85cc-e2cb6d02acd6'
 
-#configure_azure_monitor(instrumentation_key=INSTR_KEY)
+if os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"):
+    configure_azure_monitor()
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
