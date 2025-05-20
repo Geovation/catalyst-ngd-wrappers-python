@@ -3,13 +3,12 @@ from azure.functions import HttpRequest, HttpResponse
 from NGD_API_Wrappers import *
 import json
 
-
-INSTRUMENTATION_KEY = 'b4b97b45-708f-41fd-85cc-e2cb6d02acd6'
-
 from azure.monitor.opentelemetry import configure_azure_monitor
 from azure.monitor.events.extension import track_event
 
-configure_azure_monitor(instrumentation_key=INSTRUMENTATION_KEY)
+#INSTR_KEY = 'b4b97b45-708f-41fd-85cc-e2cb6d02acd6'
+
+#configure_azure_monitor(instrumentation_key=INSTR_KEY)
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
@@ -76,8 +75,10 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
     schema = LatestCollectionsSchema()
 
     params = {**req.params}
+    print(params)
     try:
         parsed_params = schema.load(params)
+        print(parsed_params)
     except ValidationError as e:
         code = 400
         error_body = json.dumps({
@@ -154,7 +155,7 @@ def http_latest_single_col(req: HttpRequest) -> HttpResponse:
         'Method': req.method,
     })
 
-    track_event('HTTP_Request', custom_dimensions=custom_dimensions)
+    #track_event('HTTP_Request', custom_dimensions=custom_dimensions)
 
     return HttpResponse(
         body=json_data,
@@ -191,7 +192,6 @@ def construct_response(req: HttpRequest, schema_class: type, func: callable) -> 
             col = params.get('collection')
             if col:
                 params['collection'] = params.get('collection').split(',')
-
         try:
             parsed_params = schema.load(params)
         except Exception as e:
@@ -229,14 +229,14 @@ def construct_response(req: HttpRequest, schema_class: type, func: callable) -> 
         json_data = json.dumps(data)
 
         custom_dimensions = {f'query_params.{str(k)}': str(v) for k, v in parsed_params.items()}
-        custom_dimensions.update(f'query_params.{str(k)}': str(v) for k, v in custom_params.items())
+        custom_dimensions.update({f'query_params.{str(k)}': str(v) for k, v in custom_params.items()})
         custom_dimensions.pop('key', None)
         custom_dimensions.update({
             'URL': req.url,
             'Method': req.method,
         })
 
-        track_event('HTTP_Request', custom_dimensions=custom_dimensions)
+        #track_event('HTTP_Request', custom_dimensions=custom_dimensions)
 
         return HttpResponse(
             body=json_data,

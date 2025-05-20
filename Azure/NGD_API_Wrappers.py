@@ -233,7 +233,7 @@ def ngd_items_request(
     filter_params_ = filter_params.copy()
 
     if use_latest_collection:
-        collection = get_specific_latest_collections([collection], flag_recent_updates=False).get(collection)
+        collection = get_specific_latest_collections([collection]).get(collection)
 
     if filter_params_:
         filters = construct_filter_param(**filter_params_)
