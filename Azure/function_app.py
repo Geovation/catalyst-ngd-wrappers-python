@@ -4,7 +4,6 @@ from NGD_API_Wrappers import *
 import json
 
 from azure.monitor.opentelemetry import configure_azure_monitor
-from azure.monitor.events.extension import track_event
 
 #INSTR_KEY = 'b4b97b45-708f-41fd-85cc-e2cb6d02acd6'
 

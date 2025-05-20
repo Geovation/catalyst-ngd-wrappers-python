@@ -8,6 +8,18 @@ from shapely.geometry import Point, LineString, Polygon, MultiPolygon
 from shapely.errors import GEOSException
 from copy import copy
 import json
+from azure.monitor.events.extension import track_event
+
+def flatten_coords(list_of_lists: list) -> list:
+    """Flattens the coordinates of geojson features into a flattened list of coordinate pairs."""
+    result = list()
+    for item in list_of_lists:
+        if type(item[0]) == list:
+            flattened = flatten_coords(item)
+            result.extend(flattened)
+        else:
+            result.append(item)
+    return result
 
 def get_latest_collection_versions(flag_recent_updates: bool = True, recent_update_days: int = 31) -> dict:
     '''
@@ -287,6 +299,23 @@ def ngd_items_request(
             json_response = {'code': status_code} | json_response
         json_response['errorSource'] = 'OS NGD API'
         return json_response
+
+    compiled_features = [feature['geometry']['coordinates'] for feature in json_response['features']]
+    flattened_coords = flatten_coords(compiled_features)
+    xcoords, ycoords = list(), list()
+    for pair in flattened_coords:
+        xcoords.append(pair[0])
+        ycoords.append(pair[1])
+    bbox = min(xcoords), min(ycoords), max(xcoords), max(ycoords)
+    custom_dimensions = {
+        'url.path': url,
+        'url.path_params.collection': collection,
+        'response.bbox': bbox,
+        'response.numberReturned': json_response['numberReturned'],
+    }
+    str_query_params = {f'url.query_params.{str(k)}': str(v) for k, v in query_params_.items()}
+    custom_dimensions.update(str_query_params)
+    track_event('OS NGD API - Features', custom_dimensions=custom_dimensions)
 
     for feature in json_response['features']:
         feature['collection'] = collection
