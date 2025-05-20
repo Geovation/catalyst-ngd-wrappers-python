@@ -155,7 +155,7 @@ def http_latest_single_col(req: HttpRequest) -> HttpResponse:
         'Method': req.method,
     })
 
-    #track_event('HTTP_Request', custom_dimensions=custom_dimensions)
+    track_event('HTTP_Request', custom_dimensions=custom_dimensions)
 
     return HttpResponse(
         body=json_data,
@@ -236,7 +236,7 @@ def construct_response(req: HttpRequest, schema_class: type, func: callable) -> 
             'Method': req.method,
         })
 
-        #track_event('HTTP_Request', custom_dimensions=custom_dimensions)
+        track_event('HTTP_Request', custom_dimensions=custom_dimensions)
 
         return HttpResponse(
             body=json_data,
