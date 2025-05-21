@@ -4,6 +4,7 @@ from NGD_API_Wrappers import *
 import json
 
 from azure.monitor.opentelemetry import configure_azure_monitor
+from azure.monitor.events.extension import track_event
 
 if os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"):
     configure_azure_monitor()
@@ -225,16 +226,6 @@ def construct_response(req: HttpRequest, schema_class: type, func: callable) -> 
             attributes = ', '.join(fields)
             data['description'] = descr.format(attr=attributes)
         json_data = json.dumps(data)
-
-        custom_dimensions = {f'query_params.{str(k)}': str(v) for k, v in parsed_params.items()}
-        custom_dimensions.update({f'query_params.{str(k)}': str(v) for k, v in custom_params.items()})
-        custom_dimensions.pop('key', None)
-        custom_dimensions.update({
-            'URL': req.url,
-            'Method': req.method,
-        })
-
-        track_event('HTTP_Request', custom_dimensions=custom_dimensions)
 
         return HttpResponse(
             body=json_data,
