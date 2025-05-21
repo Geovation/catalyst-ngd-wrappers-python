@@ -308,6 +308,7 @@ def ngd_items_request(
         ycoords.append(pair[1])
     bbox = min(xcoords), min(ycoords), max(xcoords), max(ycoords)
     custom_dimensions = {
+        'method': 'GET',
         'url.path': url,
         'url.path_params.collection': collection,
         'response.bbox': bbox,
