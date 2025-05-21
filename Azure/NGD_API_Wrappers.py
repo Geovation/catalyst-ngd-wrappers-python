@@ -1,13 +1,14 @@
-import requests as r
 import re
 import os
-from datetime import datetime, timedelta
-#from dotenv import load_dotenv
-from shapely import from_wkt
-from shapely.geometry import Point, LineString, Polygon, MultiPolygon
-from shapely.errors import GEOSException
-from copy import copy
 import json
+from datetime import datetime, timedelta
+
+import requests as r
+
+from shapely import from_wkt
+from shapely.geometry import Point, LineString, Polygon
+from shapely.errors import GEOSException
+
 from azure.monitor.events.extension import track_event
 
 def flatten_coords(list_of_lists: list) -> list:

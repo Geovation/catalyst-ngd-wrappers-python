@@ -1,19 +1,20 @@
-import azure.functions as func
-from azure.functions import HttpRequest, HttpResponse
-from NGD_API_Wrappers import *
 import json
+import azure.functions as func
 
+from azure.functions import HttpRequest, HttpResponse
 from azure.monitor.opentelemetry import configure_azure_monitor
 from azure.monitor.events.extension import track_event
+
+from marshmallow import Schema, INCLUDE, EXCLUDE
+from marshmallow.fields import Integer, String, Boolean, List
+from marshmallow.exceptions import ValidationError
+
+from NGD_API_Wrappers import *
 
 if os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"):
     configure_azure_monitor()
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
-
-from marshmallow import Schema, INCLUDE, EXCLUDE
-from marshmallow.fields import Integer, String, Boolean, List
-from marshmallow.exceptions import ValidationError
 
 class LatestCollectionsSchema(Schema):
     flag_recent_updates = Boolean(data_key='flag-recent-updates', required=False)
