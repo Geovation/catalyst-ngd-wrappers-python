@@ -31,7 +31,7 @@ def get_latest_collection_versions(flag_recent_updates: bool = True, recent_upda
     More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
     '''
 
-    response = r.get('https://api.os.uk/features/ngd/ofa/v1/collections/')
+    response = r.get('https://api.os.uk/features/ngd/ofa/v1/collections/', timeout=20)
     collections_data = response.json()['collections']
     collections_list = [collection['id'] for collection in collections_data]
 
@@ -105,9 +105,10 @@ def get_access_token(client_id: str, client_secret: str) -> str:
     }
 
     response = r.post(
-        url, 
+        url,
         auth=(client_id, client_secret),
-        data=data
+        data=data,
+        timeout=20
     )
 
     json_response = response.json()
@@ -126,17 +127,19 @@ def OAauth2_manager(func: callable):
         try:
             access_token = os.environ.get('ACCESS_TOKEN')
             kwargs_['access_token'] = access_token
-            return func(*args, **kwargs_)
-        except Exception:
+            response = func(*args, **kwargs_)
+            return response
+        except KeyError:
             client_id = os.environ.get('CLIENT_ID')
             client_secret = os.environ.get('CLIENT_SECRET')
             access_token = get_access_token(
                 client_id=client_id,
                 client_secret=client_secret
             )
-            os.environ['ACCESS_TOKEN'] = access_token
             kwargs_['access_token'] = access_token
-            return func(*args, **kwargs_)
+            response = func(*args, **kwargs_)
+            os.environ['ACCESS_TOKEN'] = access_token
+            return response
 
     wrapper.__name__ = func.__name__ + '+OAuth2_manager'
     funcname = func.__name__
@@ -265,6 +268,7 @@ def ngd_items_request(
     response = r.get(
         url,
         headers=headers,
+        timeout=20,
         **kwargs
     )
 
