@@ -357,7 +357,6 @@ def limit_extension(func: callable):
         while (request_count != request_limit) and (not(limit) or offset < limit):
 
             if request_count == batch_count:
-                print('final batch of size', final_batchsize)
                 query_params_['limit'] = final_batchsize
             query_params_['offset'] = offset
 
@@ -537,8 +536,6 @@ def multiple_collections_extension(func: callable) -> dict:
             )
             code = json_response.get('code', 200)
             if code == 404 and 'is not a supported Collection' in json_response.get('description'):
-                print(func.__name__)
-                print(json_response)
                 return json_response
             if code >= 400:
                 return json_response

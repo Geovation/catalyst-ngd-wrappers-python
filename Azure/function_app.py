@@ -73,10 +73,9 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
     schema = LatestCollectionsSchema()
 
     params = {**req.params}
-    print(params)
+
     try:
         parsed_params = schema.load(params)
-        print(parsed_params)
     except ValidationError as e:
         code = 400
         error_body = json.dumps({
