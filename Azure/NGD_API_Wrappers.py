@@ -13,7 +13,7 @@ from azure.monitor.events.extension import track_event
 
 def flatten_coords(list_of_lists: list) -> list:
     """Flattens the coordinates of geojson features into a flattened list of coordinate pairs."""
-    result = list()
+    result = []
     for item in list_of_lists:
         if type(item[0]) == list:
             flattened = flatten_coords(item)
@@ -35,7 +35,7 @@ def get_latest_collection_versions(flag_recent_updates: bool = True, recent_upda
     collections_data = response.json()['collections']
     collections_list = [collection['id'] for collection in collections_data]
 
-    collections_dict = dict()
+    collections_dict = {}
     for col in collections_list:
         basename, version = re.split(r'-(?=[^-]*$)', col)
         version = int(version)
@@ -44,18 +44,18 @@ def get_latest_collection_versions(flag_recent_updates: bool = True, recent_upda
         else:
             collections_dict[basename] = [version]
 
-    output_lookup = dict()
+    output_lookup = {}
     for basename, versions in collections_dict.items():
         latest_version = max(versions)
         output_lookup[basename] = f'{basename}-{latest_version}'
 
-    if not(flag_recent_updates):
+    if not flag_recent_updates:
         return output_lookup
 
     time_format = r'%Y-%m-%dT%H:%M:%SZ'
     recent_update_cutoff = datetime.now() - timedelta(days=recent_update_days)
     latest_versions_data = [c for c in collections_data if c['id'] in output_lookup.values()]
-    recent_collections = list()
+    recent_collections = []
 
     for collection_data in latest_versions_data:
         version_startdate = collection_data['extent']['temporal']['interval'][0][0]
@@ -168,7 +168,7 @@ def construct_bbox_filter(
 ):
     if bbox_tuple:
         return str(bbox_tuple)[1:-1].replace(' ','')
-    list_ = list()
+    list_ = []
     for z in [xmin, ymin, xmax, ymax]:
         if z == None:
             raise AttributeError('You must provide either bbox_tuple or all of [xmin, ymin, xmax, ymax]')
@@ -303,7 +303,7 @@ def ngd_items_request(
 
     compiled_features = [feature['geometry']['coordinates'] for feature in json_response['features']]
     flattened_coords = flatten_coords(compiled_features)
-    xcoords, ycoords = list(), list()
+    xcoords, ycoords = [], []
     for pair in flattened_coords:
         xcoords.append(pair[0])
         ycoords.append(pair[1])
@@ -346,7 +346,7 @@ def limit_extension(func: callable):
                 "errorSource": "Catalyst Wrapper"
             }
 
-        items = list()
+        items = []
 
         batch_count, final_batchsize = divmod(limit, 100) if limit else (None, None)
         request_count = 0
@@ -415,7 +415,7 @@ def multilevel_explode(shape) -> list[Polygon | LineString | Point]:
         return [shape]
 
     lower_shapes = shape.geoms
-    result_list = list()
+    result_list = []
     for lshape in lower_shapes:
         lower_shape_exploded = multilevel_explode(lshape)
         result_list.extend(lower_shape_exploded)
@@ -440,7 +440,7 @@ def multigeometry_search_extension(func: callable):
                 "errorSource": "Catalyst Wrapper"
             }
         
-        search_areas = list()
+        search_areas = []
         partial_geoms = multilevel_explode(full_geom)
 
         for search_area, geom in enumerate(partial_geoms):
@@ -463,7 +463,7 @@ def multigeometry_search_extension(func: callable):
             'features': []
         }
 
-        ids = list()
+        ids = []
         geojson_fts = geojson['features']
         for area in search_areas:
 
@@ -474,7 +474,7 @@ def multigeometry_search_extension(func: callable):
                 feature['searchAreaNumber'] = searchAreaNumber
                 feature['properties']['searchAreaNumber'] = searchAreaNumber
 
-            new_features = list()
+            new_features = []
             for f in features:
                 if f['id'] in ids:
                     index = [v for v, gf in enumerate(geojson_fts) if gf['id'] == f['id']][0]
@@ -522,12 +522,12 @@ def multiple_collections_extension(func: callable) -> dict:
     ):
 
         if use_latest_collection:
-            has_version, no_version = list(), list()
+            has_version, no_version = [], []
             [has_version.append(c) if c[-1].isdigit() else no_version.append(c) for c in collection]
             collection = list(get_specific_latest_collections(no_version).values())
             collection.extend(has_version)
 
-        results = dict()
+        results = {}
         for col in collection:
             json_response = func(
                 *args,
