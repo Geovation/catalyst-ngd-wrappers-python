@@ -7,6 +7,7 @@ import requests as r
 
 from shapely import from_wkt
 from shapely.geometry import Point, LineString, Polygon
+from shapely.geometry.base import BaseGeometry
 from shapely.errors import GEOSException
 
 from azure.monitor.events.extension import track_event
@@ -118,27 +119,26 @@ def get_access_token(client_id: str, client_secret: str) -> str:
 
     return token
 
-def OAauth2_manager(func: callable):
+def OAauth2_manager(func: callable) -> callable:
 
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs) -> dict:
 
         kwargs_ = kwargs.copy()
 
         try:
             access_token = os.environ.get('ACCESS_TOKEN')
             kwargs_['access_token'] = access_token
-            response = func(*args, **kwargs_)
-            return response
-        except KeyError:
+        except Exception:
             client_id = os.environ.get('CLIENT_ID')
             client_secret = os.environ.get('CLIENT_SECRET')
             access_token = get_access_token(
                 client_id=client_id,
                 client_secret=client_secret
             )
-            kwargs_['access_token'] = access_token
-            response = func(*args, **kwargs_)
+            kwargs_['access_token'] = get_access_token
             os.environ['ACCESS_TOKEN'] = access_token
+        finally:
+            response = func(*args, **kwargs_)
             return response
 
     wrapper.__name__ = func.__name__ + '+OAuth2_manager'
@@ -157,7 +157,7 @@ def OAauth2_manager(func: callable):
     """
     return wrapper
 
-def wkt_to_spatial_filter(wkt, predicate='INTERSECTS'):
+def wkt_to_spatial_filter(wkt: str, predicate: str ='INTERSECTS') -> str:
     '''Constructs a full spatial filter in conformance with the OGC API - Features standard from well-known-text (wkt)
     Currently, only 'Simple CQL' conformance is supported, therefore INTERSECTS is the only supported spatial predicate: https://portal.ogc.org/files/96288#rc_simple-cql'''
     return f'({predicate}(geometry,{wkt}))'
@@ -168,7 +168,7 @@ def construct_bbox_filter(
         ymin: float | int = None,
         xmax: float | int = None,
         ymax: float | int = None
-):
+) -> str:
     if bbox_tuple:
         return str(bbox_tuple)[1:-1].replace(' ','')
     list_ = []
@@ -204,7 +204,7 @@ def construct_query_params(**params) -> str:
     params_list = [f'{k}={v}' for k, v in params.items()]
     return '?' + '&'.join(params_list)
 
-def construct_filter_param(**params):
+def construct_filter_param(**params) -> str:
     '''Constructs a set of key=value parameters into a filter string for an API query'''
     for k, v in params.items():
         if type(v) == str:
@@ -331,7 +331,7 @@ def ngd_items_request(
         json_response['numberOfRequests'] = 1
     return json_response
 
-def limit_extension(func: callable):
+def limit_extension(func: callable) -> callable:
 
     def wrapper(
         *args,
@@ -339,7 +339,7 @@ def limit_extension(func: callable):
         limit: int = None,
         query_params: dict = {},
         **kwargs
-    ):
+    ) -> dict:
 
         query_params_ = query_params.copy()
 
@@ -409,7 +409,7 @@ def limit_extension(func: callable):
     """
     return wrapper
 
-def multilevel_explode(shape) -> list[Polygon | LineString | Point]:
+def multilevel_explode(shape: BaseGeometry) -> list[Polygon | LineString | Point]:
     """
     Explode a geometry into its constituent parts.
     Where multigeometries contain other multigeometries, the layers are flattened into a single list, such that the results lists contains only single geomtries.
@@ -425,14 +425,14 @@ def multilevel_explode(shape) -> list[Polygon | LineString | Point]:
         result_list.extend(lower_shape_exploded)
     return result_list
 
-def multigeometry_search_extension(func: callable):
+def multigeometry_search_extension(func: callable) -> callable:
 
     def wrapper(
         *args,
         wkt: str,
         hierarchical_output: bool = False,
         **kwargs
-    ):
+    ) -> dict:
 
         try:
             full_geom = from_wkt(wkt) if type(wkt) == str else wkt
@@ -523,7 +523,7 @@ def multiple_collections_extension(func: callable) -> dict:
         use_latest_collection: bool=False,
         *args,
         **kwargs
-    ):
+    ) -> dict:
 
         if use_latest_collection:
             has_version, no_version = [], []
