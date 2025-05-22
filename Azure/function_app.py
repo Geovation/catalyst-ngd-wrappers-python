@@ -179,7 +179,7 @@ def http_latest_single_col(req: HttpRequest) -> HttpResponse:
     )
 
 
-def delistify(params: dict):
+def delistify(params: dict) -> None:
     for k, v in params.items():
         if k != 'collection':
             params[k] = v[0]

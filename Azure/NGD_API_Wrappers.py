@@ -16,7 +16,7 @@ def flatten_coords(list_of_lists: list) -> list:
     """Flattens the coordinates of geojson features into a flattened list of coordinate pairs."""
     result = []
     for item in list_of_lists:
-        if type(item[0]) == list:
+        if isinstance(item[0], list):
             flattened = flatten_coords(item)
             result.extend(flattened)
         else:
@@ -199,7 +199,7 @@ def construct_query_params(**params) -> str:
     '''
     for p in ['crs', 'bbox-crs', 'filter-crs']:
         crs = params.get(p)
-        if type(crs) == int:
+        if isinstance(crs, int):
             params[p] = f'http://www.opengis.net/def/crs/EPSG/0/{crs}'
     params_list = [f'{k}={v}' for k, v in params.items()]
     return '?' + '&'.join(params_list)
@@ -207,7 +207,7 @@ def construct_query_params(**params) -> str:
 def construct_filter_param(**params) -> str:
     '''Constructs a set of key=value parameters into a filter string for an API query'''
     for k, v in params.items():
-        if type(v) == str:
+        if isinstance(str, v):
             params[k] = f"'{v}'"
     filter_list = [f"({k}={v})" for k, v in params.items()]
     return 'and'.join(filter_list)
@@ -415,7 +415,7 @@ def multilevel_explode(shape: BaseGeometry) -> list[Polygon | LineString | Point
     Where multigeometries contain other multigeometries, the layers are flattened into a single list, such that the results lists contains only single geomtries.
     """
 
-    if type(shape) in [Point, LineString, Polygon]:
+    if isinstance(shape, (Point, LineString, Polygon)):
         return [shape]
 
     lower_shapes = shape.geoms
@@ -435,7 +435,7 @@ def multigeometry_search_extension(func: callable) -> callable:
     ) -> dict:
 
         try:
-            full_geom = from_wkt(wkt) if type(wkt) == str else wkt
+            full_geom = from_wkt(wkt) if isinstance(wkt, str) else wkt
         except GEOSException:
             return {
                 "code": 400,
@@ -471,23 +471,23 @@ def multigeometry_search_extension(func: callable) -> callable:
         geojson_fts = geojson['features']
         for area in search_areas:
 
-            searchAreaNumber = area.pop('searchAreaNumber')
+            search_area_number = area.pop('searchAreaNumber')
 
             features = area['features']
             for feature in features:
-                feature['searchAreaNumber'] = searchAreaNumber
-                feature['properties']['searchAreaNumber'] = searchAreaNumber
+                feature['searchAreaNumber'] = search_area_number
+                feature['properties']['searchAreaNumber'] = search_area_number
 
             new_features = []
             for f in features:
                 if f['id'] in ids:
                     index = [v for v, gf in enumerate(geojson_fts) if gf['id'] == f['id']][0]
                     n = geojson_fts[index]['searchAreaNumber']
-                    n = [n] if type(n) != list else n
-                    n.append(searchAreaNumber)
+                    n = [n] if not(isinstance(n, list)) else n
+                    n.append(search_area_number)
                     geojson_fts[index]['searchAreaNumber'] = n
                 else:
-                    f['searchAreaNumber'] = searchAreaNumber
+                    f['searchAreaNumber'] = search_area_number
                     new_features.append(f)
                     ids.append(f['id'])
 
@@ -527,7 +527,11 @@ def multiple_collections_extension(func: callable) -> dict:
 
         if use_latest_collection:
             has_version, no_version = [], []
-            [has_version.append(c) if c[-1].isdigit() else no_version.append(c) for c in collection]
+            for c in collection:
+                if c[-1].isdigit():
+                    has_version.append(c)
+                else:
+                    no_version.append(c)
             collection = list(get_specific_latest_collections(no_version).values())
             collection.extend(has_version)
 
@@ -562,12 +566,12 @@ def multiple_collections_extension(func: callable) -> dict:
 
             features = col_results['features']
             geojson['features'] += features
-            numberOfRequests = col_results.pop('numberOfRequests')
-            geojson['numberOfRequests'] += numberOfRequests
-            geojson['numberOfRequestsByCollection'][col] = numberOfRequests
-            numberReturned = col_results.pop('numberReturned')
-            geojson['numberReturned'] += numberReturned
-            geojson['numberReturnedByCollection'][col] = numberReturned
+            number_of_requests = col_results.pop('numberOfRequests')
+            geojson['numberOfRequests'] += number_of_requests
+            geojson['numberOfRequestsByCollection'][col] = number_of_requests
+            number_returned = col_results.pop('numberReturned')
+            geojson['numberReturned'] += number_returned
+            geojson['numberReturnedByCollection'][col] = number_returned
 
         geojson['timeStamp'] = datetime.now().isoformat()
 
