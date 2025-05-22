@@ -443,12 +443,16 @@ def multigeometry_search_extension(func: callable) -> callable:
                 "help": "http://libgeos.org/specifications/wkt/",
                 "errorSource": "Catalyst Wrapper"
             }
-        
+
         search_areas = []
         partial_geoms = multilevel_explode(full_geom)
 
         for search_area, geom in enumerate(partial_geoms):
-            json_response = func(*args, wkt=geom, **kwargs)
+            json_response = func(
+                *args,
+                wkt=geom,
+                **kwargs
+            )
             if json_response.get('code') and json_response['code'] >= 400:
                 return json_response
             json_response['searchAreaNumber'] = search_area
@@ -469,32 +473,33 @@ def multigeometry_search_extension(func: callable) -> callable:
 
         ids = []
         geojson_fts = geojson['features']
+
         for area in search_areas:
 
             search_area_number = area.pop('searchAreaNumber')
 
             features = area['features']
-            for feature in features:
-                feature['searchAreaNumber'] = search_area_number
-                feature['properties']['searchAreaNumber'] = search_area_number
+            for feat in features:
+                feat['searchAreaNumber'] = search_area_number
+                feat['properties']['searchAreaNumber'] = search_area_number
 
             new_features = []
-            for f in features:
-                if f['id'] in ids:
-                    index = [v for v, gf in enumerate(geojson_fts) if gf['id'] == f['id']][0]
+            for feat in features:
+                if feat['id'] in ids:
+                    index = [v for v, gf in enumerate(geojson_fts) if gf['id'] == feat['id']][0]
                     n = geojson_fts[index]['searchAreaNumber']
                     n = [n] if not(isinstance(n, list)) else n
                     n.append(search_area_number)
                     geojson_fts[index]['searchAreaNumber'] = n
                 else:
-                    f['searchAreaNumber'] = search_area_number
-                    new_features.append(f)
-                    ids.append(f['id'])
+                    feat['searchAreaNumber'] = search_area_number
+                    new_features.append(feat)
+                    ids.append(feat['id'])
 
             geojson_fts += new_features
             geojson['numberOfRequests'] += area['numberOfRequests']
             geojson['numberReturned'] += len(new_features)
-        
+
         geojson['timeStamp'] = datetime.now().isoformat()
 
         return geojson
@@ -516,24 +521,36 @@ def multigeometry_search_extension(func: callable) -> callable:
     return wrapper
 
 def multiple_collections_extension(func: callable) -> dict:
+    """
+    A wrapper function, extending the input function handle multiple OS collections as inputs.
+    """
+
+    def apply_latest_collection(collection: str) -> list[str]:
+        """
+        Applies the latest collection version to a list of collections.
+        Takes a list of collection names as input, and returns a list of the latest version of each collection.
+        If a collection name is supplied with a version suffix, this will be used instead of the latest version.
+        """
+        has_version, no_version = [], []
+        for c in collection:
+            if c[-1].isdigit():
+                has_version.append(c)
+            else:
+                no_version.append(c)
+        new_collection = list(get_specific_latest_collections(no_version).values())
+        new_collection.extend(has_version)
+        return new_collection
 
     def wrapper(
         collection: list[str],
-        hierarchical_output: bool=False,
-        use_latest_collection: bool=False,
         *args,
+        hierarchical_output: bool = False,
+        use_latest_collection: bool = False,
         **kwargs
     ) -> dict:
 
         if use_latest_collection:
-            has_version, no_version = [], []
-            for c in collection:
-                if c[-1].isdigit():
-                    has_version.append(c)
-                else:
-                    no_version.append(c)
-            collection = list(get_specific_latest_collections(no_version).values())
-            collection.extend(has_version)
+            collection = apply_latest_collection(collection)
 
         results = {}
         for col in collection:
