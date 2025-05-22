@@ -119,7 +119,10 @@ def get_access_token(client_id: str, client_secret: str) -> str:
 
     return token
 
-def OAauth2_manager(func: callable) -> callable:
+def oauth2_manager(func: callable) -> callable:
+    """
+    A wrapper function, extending the input function to handle OAuth2 authentication using environment variables.
+    """
 
     def wrapper(*args, **kwargs) -> dict:
 
@@ -128,6 +131,8 @@ def OAauth2_manager(func: callable) -> callable:
         try:
             access_token = os.environ.get('ACCESS_TOKEN')
             kwargs_['access_token'] = access_token
+            response = func(*args, **kwargs_)
+            return response
         except Exception:
             client_id = os.environ.get('CLIENT_ID')
             client_secret = os.environ.get('CLIENT_SECRET')
@@ -135,16 +140,15 @@ def OAauth2_manager(func: callable) -> callable:
                 client_id=client_id,
                 client_secret=client_secret
             )
-            kwargs_['access_token'] = get_access_token
             os.environ['ACCESS_TOKEN'] = access_token
-        finally:
+            kwargs_['access_token'] = access_token
             response = func(*args, **kwargs_)
             return response
 
     wrapper.__name__ = func.__name__ + '+OAuth2_manager'
     funcname = func.__name__
     wrapper.__doc__ = f"""
-    An extension of the function {funcname} handling OAauth2 authorisation.
+    An extension of the function {funcname} handling oauth2 authorisation.
     IMPORTANT:
         CLIENT_ID and CLIENT_SECRET must be set as environment variables for this extension to work.
         This can be done using a .env file and load_dotenv()
@@ -157,7 +161,7 @@ def OAauth2_manager(func: callable) -> callable:
     """
     return wrapper
 
-def wkt_to_spatial_filter(wkt: str, predicate: str ='INTERSECTS') -> str:
+def wkt_to_spatial_filter(wkt: str, predicate: str = 'INTERSECTS') -> str:
     '''Constructs a full spatial filter in conformance with the OGC API - Features standard from well-known-text (wkt)
     Currently, only 'Simple CQL' conformance is supported, therefore INTERSECTS is the only supported spatial predicate: https://portal.ogc.org/files/96288#rc_simple-cql'''
     return f'({predicate}(geometry,{wkt}))'
@@ -169,11 +173,12 @@ def construct_bbox_filter(
         xmax: float | int = None,
         ymax: float | int = None
 ) -> str:
+    """Constructs a bounding box filter for an API query."""
     if bbox_tuple:
         return str(bbox_tuple)[1:-1].replace(' ','')
     list_ = []
     for z in [xmin, ymin, xmax, ymax]:
-        if z == None:
+        if z is None:
             raise AttributeError('You must provide either bbox_tuple or all of [xmin, ymin, xmax, ymax]')
         list_.append(str(z))
     if xmin > xmax:
@@ -214,12 +219,12 @@ def construct_filter_param(**params) -> str:
 
 def ngd_items_request(
     collection: str,
-    query_params: dict = {},
-    filter_params: dict = {},
+    query_params: dict = None,
+    filter_params: dict = None,
     wkt = None,
     use_latest_collection: bool = False,
     add_metadata: bool = True,
-    headers: dict = {},
+    headers: dict = None,
     **kwargs
 ) -> dict:
     """
@@ -244,9 +249,13 @@ def ngd_items_request(
     Returns the features as a geojson, as per the OS NGD API.
     """
 
+    query_params = query_params or {}
+    filter_params = filter_params or {}
+    headers = headers or {}
+
     kwargs.pop('hierarchical_output', None)
-    query_params_ = query_params.copy()
-    filter_params_ = filter_params.copy()
+    query_params_ = query_params.copy() # ADDRESS THIS
+    filter_params_ = filter_params.copy() # ADDRESS THIS
 
     if use_latest_collection:
         collection = get_specific_latest_collections([collection]).get(collection)
@@ -337,10 +346,11 @@ def limit_extension(func: callable) -> callable:
         *args,
         request_limit: int = 50,
         limit: int = None,
-        query_params: dict = {},
+        query_params: dict = None,
         **kwargs
     ) -> dict:
 
+        query_params = query_params or {}
         query_params_ = query_params.copy()
 
         if 'offset' in query_params_:
@@ -350,7 +360,7 @@ def limit_extension(func: callable) -> callable:
                 "errorSource": "Catalyst Wrapper"
             }
 
-        items = []
+        features = []
 
         batch_count, final_batchsize = divmod(limit, 100) if limit else (None, None)
         request_count = 0
@@ -374,7 +384,7 @@ def limit_extension(func: callable) -> callable:
             if json_response.get('code') and json_response['code'] >= 400:
                 return json_response
             request_count += 1
-            items += json_response['features']
+            features += json_response['features']
 
             if not [link for link in json_response['links'] if link['rel'] == 'next']:
                 break
@@ -384,10 +394,10 @@ def limit_extension(func: callable) -> callable:
         geojson = {
             "type": "FeatureCollection",
             "numberOfRequests": request_count,
-            "numberReturned": len(items),
+            "numberReturned": len(features),
             "timeStamp": datetime.now().isoformat(),
             "collection": kwargs.get('collection'),
-            "features": items
+            "features": features
         }
         return geojson
 
@@ -426,8 +436,14 @@ def multilevel_explode(shape: BaseGeometry) -> list[Polygon | LineString | Point
     return result_list
 
 def multigeometry_search_extension(func: callable) -> callable:
+    """
+    A wrapper function, extending the input function handle multigeometry search areas, searching each one in turn.
+    """
 
     def flatten_search_areas(search_areas: list) -> dict:
+        """
+        Flattens hierarchical search area results into a single geojson object, merging appropriate metadata.
+        """
 
         geojson = {
             'type': 'FeatureCollection',
@@ -506,9 +522,9 @@ def multigeometry_search_extension(func: callable) -> callable:
             }
             return response
 
-        geojson = flatten_search_areas(search_areas)
+        response = flatten_search_areas(search_areas)
 
-        return geojson
+        return response
 
     wrapper.__name__ = func.__name__ + '+multigeometry_search_extension'
     funcname = func.__name__
@@ -617,7 +633,7 @@ def multiple_collections_extension(func: callable) -> dict:
 # All possible ways of combining different wrappers in combos with OAuth2
 
 items = ngd_items_request
-items_auth = OAauth2_manager(items)
+items_auth = oauth2_manager(items)
 
 items_limit = limit_extension(items)
 items_geom = multigeometry_search_extension(items)
