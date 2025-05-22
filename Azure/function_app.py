@@ -18,54 +18,62 @@ app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
 
 class LatestCollectionsSchema(Schema):
-    flag_recent_updates = Boolean(
-        data_key='flag-recent-updates', required=False)
+    '''Schema for the latest collections endpoint'''
+    flag_recent_updates = Boolean(data_key='flag-recent-updates', required=False)
     recent_update_days = Integer(data_key='recent-update-days', required=False)
 
     class Meta:
+        '''Exclude unknown/extra fields'''
         unknown = EXCLUDE
 
 
 class BaseSchema(Schema):
+    '''Base schema for all queries'''
     wkt = String(data_key='wkt', required=False)
-    use_latest_collection = Boolean(
-        data_key='use-latest-collection', required=False)
+    use_latest_collection = Boolean(data_key='use-latest-collection', required=False)
 
     class Meta:
+        '''Allows additional fields to pass through to query_params'''
         unknown = INCLUDE  # Allows additional fields to pass through to query_params
 
 
 class AbstractHierarchicalSchema(BaseSchema):
-    hierarchical_output = Boolean(
-        data_key='hierarchical-output', required=False)
+    '''Abstract schema for hierarchical queries'''
+    hierarchical_output = Boolean(data_key='hierarchical-output', required=False)
 
 
 class LimitSchema(BaseSchema):
+    '''limit is the maximum number of items to return'''
     limit = Integer(data_key='limit', required=False)
     request_limit = Integer(data_key='request-limit', required=False)
 
 
 class GeomSchema(AbstractHierarchicalSchema):
+    '''wkt is a well-known text representation of a geometry'''
     wkt = String(data_key='wkt', required=True)
 
 
 class ColSchema(AbstractHierarchicalSchema):
+    '''col is a list of collections to query'''
     collection = List(String(), data_key='collection', required=True)
 
 
 class LimitGeomSchema(LimitSchema, GeomSchema):
+    '''Combining Limit and Geom schemas'''
     wkt = String(data_key='wkt', required=True)
 
 
 class LimitColSchema(LimitSchema, ColSchema):
-    """Combining Limit and Col schemas"""
+    '''Combining Limit and Col schemas'''
 
 
 class GeomColSchema(GeomSchema, ColSchema):
+    '''Combining Geom and Col schemas'''
     wkt = String(data_key='wkt', required=True)
 
 
 class LimitGeomColSchema(LimitSchema, GeomSchema, ColSchema):
+    '''Combining Limit, Geom and Col schemas'''
     wkt = String(data_key='wkt', required=True)
 
 
