@@ -427,42 +427,7 @@ def multilevel_explode(shape: BaseGeometry) -> list[Polygon | LineString | Point
 
 def multigeometry_search_extension(func: callable) -> callable:
 
-    def wrapper(
-        *args,
-        wkt: str,
-        hierarchical_output: bool = False,
-        **kwargs
-    ) -> dict:
-
-        try:
-            full_geom = from_wkt(wkt) if isinstance(wkt, str) else wkt
-        except GEOSException:
-            return {
-                "code": 400,
-                "description": "The input geometry is not valid. Please ensure you have the correct formatting for your input geometry type.",
-                "help": "http://libgeos.org/specifications/wkt/",
-                "errorSource": "Catalyst Wrapper"
-            }
-
-        search_areas = []
-        partial_geoms = multilevel_explode(full_geom)
-
-        for search_area, geom in enumerate(partial_geoms):
-            json_response = func(
-                *args,
-                wkt=geom,
-                **kwargs
-            )
-            if json_response.get('code') and json_response['code'] >= 400:
-                return json_response
-            json_response['searchAreaNumber'] = search_area
-            search_areas.append(json_response)
-
-        if hierarchical_output:
-            response = {
-                "searchAreas": search_areas
-            }
-            return response
+    def flatten_search_areas(search_areas: list) -> dict:
 
         geojson = {
             'type': 'FeatureCollection',
@@ -501,6 +466,47 @@ def multigeometry_search_extension(func: callable) -> callable:
             geojson['numberReturned'] += len(new_features)
 
         geojson['timeStamp'] = datetime.now().isoformat()
+
+        return geojson
+    
+    def wrapper(
+        *args,
+        wkt: str,
+        hierarchical_output: bool = False,
+        **kwargs
+    ) -> dict:
+
+        try:
+            full_geom = from_wkt(wkt) if isinstance(wkt, str) else wkt
+        except GEOSException:
+            return {
+                "code": 400,
+                "description": "The input geometry is not valid. Please ensure you have the correct formatting for your input geometry type.",
+                "help": "http://libgeos.org/specifications/wkt/",
+                "errorSource": "Catalyst Wrapper"
+            }
+
+        search_areas = []
+        partial_geoms = multilevel_explode(full_geom)
+
+        for search_area, geom in enumerate(partial_geoms):
+            json_response = func(
+                *args,
+                wkt=geom,
+                **kwargs
+            )
+            if json_response.get('code') and json_response['code'] >= 400:
+                return json_response
+            json_response['searchAreaNumber'] = search_area
+            search_areas.append(json_response)
+
+        if hierarchical_output:
+            response = {
+                "searchAreas": search_areas
+            }
+            return response
+
+        geojson = flatten_search_areas(search_areas)
 
         return geojson
 
