@@ -118,6 +118,7 @@ def http_latest_collections(req: HttpRequest) -> HttpResponse:
 
     custom_dimensions = {f'query_params.{str(k)}': str(v) for k, v in parsed_params.items()}
     custom_dimensions.pop('key', None)
+    custom_dimensions.pop('access_token', None)
     custom_dimensions.update({
         'method': 'GET',
         'url.path': req.url,
