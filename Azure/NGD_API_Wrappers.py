@@ -334,8 +334,7 @@ def limit_extension(func: callable) -> callable:
         **kwargs
     ) -> dict:
 
-        query_params = query_params or {}
-        query_params = query_params.copy()
+        query_params = query_params.copy() if query_params else {}
 
         if 'offset' in query_params:
             return {
