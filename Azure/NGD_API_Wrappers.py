@@ -251,8 +251,11 @@ def ngd_items_request(
     '''
 
     query_params = query_params or {}
+    query_params = query_params.copy()
     filter_params = filter_params or {}
+    filter_params = filter_params.copy()
     headers = headers or {}
+    headers = headers.copy()
 
     kwargs.pop('hierarchical_output', None)
 
@@ -320,7 +323,7 @@ def ngd_items_request(
     for pair in flattened_coords:
         xcoords.append(pair[0])
         ycoords.append(pair[1])
-    bbox = (min(xcoords), min(ycoords), max(xcoords), max(ycoords)) if xcoords and ycoords else None
+    bbox = (min(xcoords), min(ycoords), max(xcoords), max(ycoords)) if xcoords and ycoords else ''
     custom_dimensions = {
         'method': 'GET',
         'url.path': url,
@@ -354,6 +357,7 @@ def limit_extension(func: callable) -> callable:
     ) -> dict:
 
         query_params = query_params or {}
+        query_params = query_params.copy()
 
         if 'offset' in query_params:
             return {
@@ -379,7 +383,7 @@ def limit_extension(func: callable) -> callable:
 
             json_response = func(
                 *args,
-                query_params=query_params,
+                query_params = query_params,
                 add_metadata = False,
                 **kwargs
             )
