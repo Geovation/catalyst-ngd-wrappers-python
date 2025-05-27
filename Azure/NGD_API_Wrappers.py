@@ -250,12 +250,9 @@ def ngd_items_request(
     Returns the features as a geojson, as per the OS NGD API.
     '''
 
-    query_params = query_params or {}
-    query_params = query_params.copy()
-    filter_params = filter_params or {}
-    filter_params = filter_params.copy()
-    headers = headers or {}
-    headers = headers.copy()
+    query_params = (query_params or {}).copy()
+    filter_params = (filter_params or {}).copy()
+    headers = (headers or {}).copy()
 
     kwargs.pop('hierarchical_output', None)
 
