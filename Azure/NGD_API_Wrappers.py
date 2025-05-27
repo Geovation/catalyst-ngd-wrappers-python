@@ -188,28 +188,6 @@ def construct_bbox_filter(
         raise ValueError('ymax must be greater than ymin')
     return ','.join(list_)
 
-def construct_query_params(**params) -> str:
-    '''
-    Constructs a query string from a dictionary of key-value pairs.
-    Refer to https://osdatahub.os.uk/docs/ofa/technicalSpecification for details about query parameters.
-    The options are:
-        - bbox
-        - bbox-crs
-        - crs
-        - datetime
-        - filter
-        - filter-crs (can be supplied as a full http ref, or an integer)
-        - filter-lang
-        - limit
-        - offset
-    '''
-    for p in ['crs', 'bbox-crs', 'filter-crs']:
-        crs = params.get(p)
-        if isinstance(crs, int):
-            params[p] = f'http://www.opengis.net/def/crs/EPSG/0/{crs}'
-    params_list = [f'{k}={v}' for k, v in params.items()]
-    return '?' + '&'.join(params_list)
-
 def construct_filter_param(**params) -> str:
     '''Constructs a set of key=value parameters into a filter string for an API query'''
     for k, v in params.items():
@@ -269,13 +247,16 @@ def ngd_items_request(
         current_filters = query_params.get('filter')
         query_params['filter'] = f'({current_filters})and{spatial_filter}' if current_filters else spatial_filter
 
-    query_params_string = construct_query_params(**query_params)
-    url = f'https://api.os.uk/features/ngd/ofa/v1/collections/{collection}/items/{query_params_string}'
+    for k, v in query_params.items():
+        if 'crs' in k and isinstance(v, int):
+            query_params[k] = f'http://www.opengis.net/def/crs/EPSG/0/{v}'
+    url = f'https://api.os.uk/features/ngd/ofa/v1/collections/{collection}/items/'
 
     # Remove host header as this is automatically added by the requests library and can cause issues
     headers.pop('host', None)
     response = r.get(
         url,
+        params=query_params,
         headers=headers,
         timeout=UNIVERSAL_TIMEOUT,
         **kwargs
