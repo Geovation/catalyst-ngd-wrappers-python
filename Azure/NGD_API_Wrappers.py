@@ -114,8 +114,8 @@ def get_access_token(client_id: str, client_secret: str) -> str:
     )
 
     json_response = response.json()
-    if response.status_code >= 400:
-        raise Exception(json_response)
+    if response.status_code == 401:
+        raise PermissionError(json_response)
     token = json_response["access_token"]
 
     return token
@@ -125,26 +125,33 @@ def oauth2_manager(func: callable) -> callable:
     A wrapper function, extending the input function to handle OAuth2 authentication using environment variables.
     '''
 
-    def wrapper(*args, **kwargs) -> dict:
+    def wrapper(*args, headers: dict = None, **kwargs) -> dict:
 
+        headers = headers.copy() if headers else {}
         kwargs_ = kwargs.copy()
 
-        try:
-            access_token = os.environ.get('ACCESS_TOKEN')
-            kwargs_['access_token'] = access_token
-            response = func(*args, **kwargs_)
+        access_token = os.environ.get('ACCESS_TOKEN', '')
+        headers['Authorization'] = f'Bearer {access_token}'
+        response = func(*args, headers = headers, **kwargs_)
+        if response.get('code') != 401:
             return response
-        except Exception:
-            client_id = os.environ.get('CLIENT_ID')
-            client_secret = os.environ.get('CLIENT_SECRET')
+        client_id = os.environ.get('CLIENT_ID')
+        client_secret = os.environ.get('CLIENT_SECRET')
+        try:
             access_token = get_access_token(
                 client_id=client_id,
                 client_secret=client_secret
             )
-            os.environ['ACCESS_TOKEN'] = access_token
-            kwargs_['access_token'] = access_token
-            response = func(*args, **kwargs_)
-            return response
+        except PermissionError:
+            return {
+                "code": 401,
+                "description": "Missing or invalid CLIENT_ID and/or CLIENT_SECRET. Make sure these are configured correctely in your environment variables.",
+                "errorSource": "Catalyst Wrapper"
+            }
+        os.environ['ACCESS_TOKEN'] = access_token
+        headers['Authorization'] = f'Bearer {access_token}'
+        response = func(*args, headers = headers, **kwargs_)
+        return response
 
     wrapper.__name__ = func.__name__ + '+OAuth2_manager'
     funcname = func.__name__
