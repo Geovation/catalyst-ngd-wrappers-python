@@ -320,7 +320,7 @@ def ngd_items_request(
     for pair in flattened_coords:
         xcoords.append(pair[0])
         ycoords.append(pair[1])
-    bbox = min(xcoords), min(ycoords), max(xcoords), max(ycoords)
+    bbox = (min(xcoords), min(ycoords), max(xcoords), max(ycoords)) if xcoords and ycoords else None
     custom_dimensions = {
         'method': 'GET',
         'url.path': url,
