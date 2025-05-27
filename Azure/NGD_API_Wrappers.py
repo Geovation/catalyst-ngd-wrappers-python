@@ -1,20 +1,24 @@
-import requests as r
 import re
 import os
-from datetime import datetime, timedelta
-#from dotenv import load_dotenv
-from shapely import from_wkt
-from shapely.geometry import Point, LineString, Polygon, MultiPolygon
-from shapely.errors import GEOSException
-from copy import copy
 import json
+from datetime import datetime, timedelta
+
+import requests as r
+
+from shapely import from_wkt
+from shapely.geometry import Point, LineString, Polygon
+from shapely.geometry.base import BaseGeometry
+from shapely.errors import GEOSException
+
 from azure.monitor.events.extension import track_event
 
+UNIVERSAL_TIMEOUT = 20
+
 def flatten_coords(list_of_lists: list) -> list:
-    """Flattens the coordinates of geojson features into a flattened list of coordinate pairs."""
-    result = list()
+    '''Flattens the coordinates of geojson features into a flattened list of coordinate pairs.'''
+    result = []
     for item in list_of_lists:
-        if type(item[0]) == list:
+        if isinstance(item[0], list):
             flattened = flatten_coords(item)
             result.extend(flattened)
         else:
@@ -30,11 +34,11 @@ def get_latest_collection_versions(flag_recent_updates: bool = True, recent_upda
     More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
     '''
 
-    response = r.get('https://api.os.uk/features/ngd/ofa/v1/collections/')
+    response = r.get('https://api.os.uk/features/ngd/ofa/v1/collections/', timeout=UNIVERSAL_TIMEOUT)
     collections_data = response.json()['collections']
     collections_list = [collection['id'] for collection in collections_data]
 
-    collections_dict = dict()
+    collections_dict = {}
     for col in collections_list:
         basename, version = re.split(r'-(?=[^-]*$)', col)
         version = int(version)
@@ -43,26 +47,25 @@ def get_latest_collection_versions(flag_recent_updates: bool = True, recent_upda
         else:
             collections_dict[basename] = [version]
 
-    output_lookup = dict()
+    output_lookup = {}
     for basename, versions in collections_dict.items():
         latest_version = max(versions)
         output_lookup[basename] = f'{basename}-{latest_version}'
 
-    if not(flag_recent_updates):
+    if not flag_recent_updates:
         return output_lookup
 
-    time_format = r'%Y-%m-%dT%H:%M:%SZ'
     recent_update_cutoff = datetime.now() - timedelta(days=recent_update_days)
     latest_versions_data = [c for c in collections_data if c['id'] in output_lookup.values()]
-    recent_collections = list()
+    recent_collections = []
 
     for collection_data in latest_versions_data:
         version_startdate = collection_data['extent']['temporal']['interval'][0][0]
-        time_obj = datetime.strptime(version_startdate, time_format)
+        time_obj = datetime.strptime(version_startdate, r'%Y-%m-%dT%H:%M:%SZ')
         if time_obj > recent_update_cutoff:
             collection = collection_data['id']
             recent_collections.append(collection)
-   
+
     full_output = {
         'collection-lookup': output_lookup,
         'recent-update-threshold-days': recent_update_days,
@@ -87,7 +90,7 @@ def get_specific_latest_collections(collection: list[str], **kwargs) -> str:
             "description": f"Collection {e} is not a supported Collection base name. The name must not include a version suffix. Please refer to the documentation for a list of supported Collections.",
             "help": "https://api.os.uk/features/ngd/ofa/v1/collections"
         }
-                       
+                      
     return specific_latest_collections
 
 def get_access_token(client_id: str, client_secret: str) -> str:
@@ -104,9 +107,10 @@ def get_access_token(client_id: str, client_secret: str) -> str:
     }
 
     response = r.post(
-        url, 
+        url,
         auth=(client_id, client_secret),
-        data=data
+        data=data,
+        timeout=UNIVERSAL_TIMEOUT
     )
 
     json_response = response.json()
@@ -116,16 +120,20 @@ def get_access_token(client_id: str, client_secret: str) -> str:
 
     return token
 
-def OAauth2_manager(func: callable):
+def oauth2_manager(func: callable) -> callable:
+    '''
+    A wrapper function, extending the input function to handle OAuth2 authentication using environment variables.
+    '''
 
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs) -> dict:
 
         kwargs_ = kwargs.copy()
 
         try:
             access_token = os.environ.get('ACCESS_TOKEN')
             kwargs_['access_token'] = access_token
-            return func(*args, **kwargs_)
+            response = func(*args, **kwargs_)
+            return response
         except Exception:
             client_id = os.environ.get('CLIENT_ID')
             client_secret = os.environ.get('CLIENT_SECRET')
@@ -135,12 +143,13 @@ def OAauth2_manager(func: callable):
             )
             os.environ['ACCESS_TOKEN'] = access_token
             kwargs_['access_token'] = access_token
-            return func(*args, **kwargs_)
+            response = func(*args, **kwargs_)
+            return response
 
     wrapper.__name__ = func.__name__ + '+OAuth2_manager'
     funcname = func.__name__
-    wrapper.__doc__ = f"""
-    An extension of the function {funcname} handling OAauth2 authorisation.
+    wrapper.__doc__ = f'''
+    An extension of the function {funcname} handling oauth2 authorisation.
     IMPORTANT:
         CLIENT_ID and CLIENT_SECRET must be set as environment variables for this extension to work.
         This can be done using a .env file and load_dotenv()
@@ -150,10 +159,10 @@ def OAauth2_manager(func: callable):
     ____________________________________________________
     Docs for {funcname}:
         {func.__doc__}
-    """
+    '''
     return wrapper
 
-def wkt_to_spatial_filter(wkt, predicate='INTERSECTS'):
+def wkt_to_spatial_filter(wkt: str, predicate: str = 'INTERSECTS') -> str:
     '''Constructs a full spatial filter in conformance with the OGC API - Features standard from well-known-text (wkt)
     Currently, only 'Simple CQL' conformance is supported, therefore INTERSECTS is the only supported spatial predicate: https://portal.ogc.org/files/96288#rc_simple-cql'''
     return f'({predicate}(geometry,{wkt}))'
@@ -164,12 +173,13 @@ def construct_bbox_filter(
         ymin: float | int = None,
         xmax: float | int = None,
         ymax: float | int = None
-):
+) -> str:
+    '''Constructs a bounding box filter for an API query.'''
     if bbox_tuple:
         return str(bbox_tuple)[1:-1].replace(' ','')
-    list_ = list()
+    list_ = []
     for z in [xmin, ymin, xmax, ymax]:
-        if z == None:
+        if z is None:
             raise AttributeError('You must provide either bbox_tuple or all of [xmin, ymin, xmax, ymax]')
         list_.append(str(z))
     if xmin > xmax:
@@ -195,30 +205,30 @@ def construct_query_params(**params) -> str:
     '''
     for p in ['crs', 'bbox-crs', 'filter-crs']:
         crs = params.get(p)
-        if type(crs) == int:
+        if isinstance(crs, int):
             params[p] = f'http://www.opengis.net/def/crs/EPSG/0/{crs}'
     params_list = [f'{k}={v}' for k, v in params.items()]
     return '?' + '&'.join(params_list)
 
-def construct_filter_param(**params):
+def construct_filter_param(**params) -> str:
     '''Constructs a set of key=value parameters into a filter string for an API query'''
     for k, v in params.items():
-        if type(v) == str:
+        if isinstance(str, v):
             params[k] = f"'{v}'"
     filter_list = [f"({k}={v})" for k, v in params.items()]
     return 'and'.join(filter_list)
 
 def ngd_items_request(
     collection: str,
-    query_params: dict = {},
-    filter_params: dict = {},
+    query_params: dict = None,
+    filter_params: dict = None,
     wkt = None,
     use_latest_collection: bool = False,
     add_metadata: bool = True,
-    headers: dict = {},
+    headers: dict = None,
     **kwargs
 ) -> dict:
-    """
+    '''
     Calls items from the OS NGD API - Features
         - https://osdatahub.os.uk/docs/wfs/overview
         - https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features
@@ -238,32 +248,39 @@ def ngd_items_request(
         **kwargs: other generic parameters to be passed to the requests.get()
 
     Returns the features as a geojson, as per the OS NGD API.
-    """
+    '''
+
+    query_params = query_params or {}
+    query_params = query_params.copy()
+    filter_params = filter_params or {}
+    filter_params = filter_params.copy()
+    headers = headers or {}
+    headers = headers.copy()
 
     kwargs.pop('hierarchical_output', None)
-    query_params_ = query_params.copy()
-    filter_params_ = filter_params.copy()
 
     if use_latest_collection:
         collection = get_specific_latest_collections([collection]).get(collection)
 
-    if filter_params_:
-        filters = construct_filter_param(**filter_params_)
-        current_filters = query_params_.get('filter')
-        query_params_['filter'] = f'({current_filters})and{filters}' if current_filters else filters
+    if filter_params:
+        filters = construct_filter_param(**filter_params)
+        current_filters = query_params.get('filter')
+        query_params['filter'] = f'({current_filters})and{filters}' if current_filters else filters
 
     if wkt:
         spatial_filter = wkt_to_spatial_filter(wkt)
-        current_filters = query_params_.get('filter')
-        query_params_['filter'] = f'({current_filters})and{spatial_filter}' if current_filters else spatial_filter
+        current_filters = query_params.get('filter')
+        query_params['filter'] = f'({current_filters})and{spatial_filter}' if current_filters else spatial_filter
 
-    query_params_string = construct_query_params(**query_params_)
+    query_params_string = construct_query_params(**query_params)
     url = f'https://api.os.uk/features/ngd/ofa/v1/collections/{collection}/items/{query_params_string}'
 
-    headers.pop('host', None) # Remove host header as this is automatically added by the requests library and can cause issues
+    # Remove host header as this is automatically added by the requests library and can cause issues
+    headers.pop('host', None)
     response = r.get(
         url,
         headers=headers,
+        timeout=UNIVERSAL_TIMEOUT,
         **kwargs
     )
 
@@ -277,7 +294,7 @@ def ngd_items_request(
             status_code = 414
             error_string = {
                 'Error Text': error_string,
-                'Help (Catalyst)': 'This could be due to a request URI which is too long or an input geometry which is too complex'
+                'Help (Catalyst)': 'This could be due to a request URI which is too long or an input geometry which is too complex.'
             }
         return {
             "code": status_code,
@@ -287,7 +304,7 @@ def ngd_items_request(
 
     if status_code >= 400:
         descr = json_response.get('description', '')
-        if not(descr):
+        if not descr:
             json_response.pop('code', None)
             descr = json_response
             json_response = {'code': status_code, 'description': descr}
@@ -295,18 +312,18 @@ def ngd_items_request(
             descr = descr.replace('Supported parameters are', 'Supported NGD parameters are')
             descr += '. Additional supported Catalyst parameters for this function are: {attr}.'
             json_response['description'] = descr
-        if not(json_response.get('code')):
+        if not json_response.get('code'):
             json_response = {'code': status_code} | json_response
         json_response['errorSource'] = 'OS NGD API'
         return json_response
 
     compiled_features = [feature['geometry']['coordinates'] for feature in json_response['features']]
     flattened_coords = flatten_coords(compiled_features)
-    xcoords, ycoords = list(), list()
+    xcoords, ycoords = [], []
     for pair in flattened_coords:
         xcoords.append(pair[0])
         ycoords.append(pair[1])
-    bbox = min(xcoords), min(ycoords), max(xcoords), max(ycoords)
+    bbox = (min(xcoords), min(ycoords), max(xcoords), max(ycoords)) if xcoords and ycoords else ''
     custom_dimensions = {
         'method': 'GET',
         'url.path': url,
@@ -314,7 +331,7 @@ def ngd_items_request(
         'response.bbox': bbox,
         'response.numberReturned': json_response['numberReturned'],
     }
-    str_query_params = {f'url.query_params.{str(k)}': str(v) for k, v in query_params_.items()}
+    str_query_params = {f'url.query_params.{str(k)}': str(v) for k, v in query_params.items()}
     custom_dimensions.update(str_query_params)
     track_event('OS NGD API - Features', custom_dimensions=custom_dimensions)
 
@@ -326,70 +343,75 @@ def ngd_items_request(
         json_response['numberOfRequests'] = 1
     return json_response
 
-def limit_extension(func: callable):
+def limit_extension(func: callable) -> callable:
+    '''
+    A wrapper function, extending the input function to handle pagination from OS NGD API - Features. 
+    '''
 
     def wrapper(
         *args,
         request_limit: int = 50,
         limit: int = None,
-        query_params: dict = {},
+        query_params: dict = None,
         **kwargs
-    ):
+    ) -> dict:
 
-        query_params_ = query_params.copy()
+        query_params = query_params or {}
+        query_params = query_params.copy()
 
-        if 'offset' in query_params_:
+        if 'offset' in query_params:
             return {
                 "code": 400,
                 "description": "'offset' is not a valid attribute for functions using this Catalyst wrapper.",
                 "errorSource": "Catalyst Wrapper"
             }
 
-        items = list()
+        features = []
 
         batch_count, final_batchsize = divmod(limit, 100) if limit else (None, None)
         request_count = 0
         offset = 0
 
-        if not(limit) and not(request_limit):
+        if not limit and not request_limit:
             raise AttributeError('At least one of limit or request_limit must be provided to prevent indefinitely numerous requests and high costs. However, there is no upper limit to these values.')
 
         while (request_count != request_limit) and (not(limit) or offset < limit):
 
             if request_count == batch_count:
-                query_params_['limit'] = final_batchsize
-            query_params_['offset'] = offset
+                query_params['limit'] = final_batchsize
+            query_params['offset'] = offset
 
             json_response = func(
                 *args,
-                query_params=query_params_,
+                query_params = query_params,
                 add_metadata = False,
                 **kwargs
             )
             if json_response.get('code') and json_response['code'] >= 400:
                 return json_response
             request_count += 1
-            items += json_response['features']
+            features += json_response['features']
 
             if not [link for link in json_response['links'] if link['rel'] == 'next']:
                 break
-            
+
             offset += 100
 
         geojson = {
             "type": "FeatureCollection",
             "numberOfRequests": request_count,
-            "numberReturned": len(items),
+            "numberReturned": len(features),
             "timeStamp": datetime.now().isoformat(),
             "collection": kwargs.get('collection'),
-            "features": items
+            "features": features
         }
         return geojson
 
     wrapper.__name__ = func.__name__ + '+limit_extension'
     funcname = func.__name__
-    wrapper.__doc__ = f"""
-    This is an extension the {funcname} function, which returns OS NGD features. It serves to extend the maximum number of features returned above the default maximum 100 by looping through multiple requests.
+    wrapper.__doc__ = f'''
+    This is an extension the {funcname} function, which returns OS NGD features.
+    It serves to extend the maximum number of features returned above the default maximum 100 by looping through multiple requests.
     It takes the following arguments:
     - collection: The name of the collection to be queried.
     - request_limit: The maximum number of calls to be made to {funcname}. Default is 50.
@@ -401,36 +423,84 @@ def limit_extension(func: callable):
     ____________________________________________________
     Docs for {funcname}:
         {func.__doc__}
-    """
+    '''
     return wrapper
 
-def multilevel_explode(shape) -> list[Polygon | LineString | Point]:
-    """
+def multilevel_explode(shape: BaseGeometry) -> list[Polygon | LineString | Point]:
+    '''
     Explode a geometry into its constituent parts.
     Where multigeometries contain other multigeometries, the layers are flattened into a single list, such that the results lists contains only single geomtries.
-    """
+    '''
 
-    if type(shape) in [Point, LineString, Polygon]:
+    if isinstance(shape, (Point, LineString, Polygon)):
         return [shape]
 
     lower_shapes = shape.geoms
-    result_list = list()
+    result_list = []
     for lshape in lower_shapes:
         lower_shape_exploded = multilevel_explode(lshape)
         result_list.extend(lower_shape_exploded)
     return result_list
 
-def multigeometry_search_extension(func: callable):
+def multigeometry_search_extension(func: callable) -> callable:
+    '''
+    A wrapper function, extending the input function handle multigeometry search areas, searching each one in turn.
+    '''
 
+    def flatten_search_areas(search_areas: list) -> dict:
+        '''
+        Flattens hierarchical search area results into a single geojson object, merging appropriate metadata.
+        '''
+
+        geojson = {
+            'type': 'FeatureCollection',
+            'numberOfRequests': 0,
+            'numberReturned': 0,
+            'features': []
+        }
+
+        ids = []
+        geojson_fts = geojson['features']
+
+        for area in search_areas:
+
+            search_area_number = area.pop('searchAreaNumber')
+
+            features = area['features']
+            for feat in features:
+                feat['searchAreaNumber'] = search_area_number
+                feat['properties']['searchAreaNumber'] = search_area_number
+
+            new_features = []
+            for feat in features:
+                if feat['id'] in ids:
+                    index = [v for v, gf in enumerate(geojson_fts) if gf['id'] == feat['id']][0]
+                    n = geojson_fts[index]['searchAreaNumber']
+                    n = [n] if not(isinstance(n, list)) else n
+                    n.append(search_area_number)
+                    geojson_fts[index]['searchAreaNumber'] = n
+                else:
+                    feat['searchAreaNumber'] = search_area_number
+                    new_features.append(feat)
+                    ids.append(feat['id'])
+
+            geojson_fts += new_features
+            geojson['numberOfRequests'] += area['numberOfRequests']
+            geojson['numberReturned'] += len(new_features)
+
+        geojson['timeStamp'] = datetime.now().isoformat()
+
+        return geojson
+    
     def wrapper(
         *args,
         wkt: str,
         hierarchical_output: bool = False,
         **kwargs
-    ):
+    ) -> dict:
 
         try:
-            full_geom = from_wkt(wkt) if type(wkt) == str else wkt
+            full_geom = from_wkt(wkt) if isinstance(wkt, str) else wkt
         except GEOSException:
             return {
                 "code": 400,
@@ -438,12 +508,16 @@ def multigeometry_search_extension(func: callable):
                 "help": "http://libgeos.org/specifications/wkt/",
                 "errorSource": "Catalyst Wrapper"
             }
-        
-        search_areas = list()
+
+        search_areas = []
         partial_geoms = multilevel_explode(full_geom)
 
         for search_area, geom in enumerate(partial_geoms):
-            json_response = func(*args, wkt=geom, **kwargs)
+            json_response = func(
+                *args,
+                wkt=geom,
+                **kwargs
+            )
             if json_response.get('code') and json_response['code'] >= 400:
                 return json_response
             json_response['searchAreaNumber'] = search_area
@@ -455,48 +529,13 @@ def multigeometry_search_extension(func: callable):
             }
             return response
 
-        geojson = {
-            'type': 'FeatureCollection',
-            'numberOfRequests': 0,
-            'numberReturned': 0,
-            'features': []
-        }
+        response = flatten_search_areas(search_areas)
 
-        ids = list()
-        geojson_fts = geojson['features']
-        for area in search_areas:
-
-            searchAreaNumber = area.pop('searchAreaNumber')
-
-            features = area['features']
-            for feature in features:
-                feature['searchAreaNumber'] = searchAreaNumber
-                feature['properties']['searchAreaNumber'] = searchAreaNumber
-
-            new_features = list()
-            for f in features:
-                if f['id'] in ids:
-                    index = [v for v, gf in enumerate(geojson_fts) if gf['id'] == f['id']][0]
-                    n = geojson_fts[index]['searchAreaNumber']
-                    n = [n] if type(n) != list else n
-                    n.append(searchAreaNumber)
-                    geojson_fts[index]['searchAreaNumber'] = n
-                else:
-                    f['searchAreaNumber'] = searchAreaNumber
-                    new_features.append(f)
-                    ids.append(f['id'])
-
-            geojson_fts += new_features
-            geojson['numberOfRequests'] += area['numberOfRequests']
-            geojson['numberReturned'] += len(new_features)
-        
-        geojson['timeStamp'] = datetime.now().isoformat()
-
-        return geojson
+        return response
 
     wrapper.__name__ = func.__name__ + '+multigeometry_search_extension'
     funcname = func.__name__
-    wrapper.__doc__ = f"""
+    wrapper.__doc__ = f'''
     An alternative means of returning OS NGD features for a search area which is a Multi-Geometry (MultiPoint, MultiLinestring, or MultiPolygon), which will in some cases improve speed, performance, and prevent the call from timing out.
     Extends to {funcname} function.
     Each component shape of the multi-geometry will be searched in turn using the {funcname} function.
@@ -507,26 +546,42 @@ def multigeometry_search_extension(func: callable):
     ____________________________________________________
     Docs for {funcname}:
         {func.__doc__}
-    """
+    '''
     return wrapper
 
 def multiple_collections_extension(func: callable) -> dict:
+    '''
+    A wrapper function, extending the input function handle multiple OS collections as inputs.
+    '''
+
+    def apply_latest_collection(collection: str) -> list[str]:
+        '''
+        Applies the latest collection version to a list of collections.
+        Takes a list of collection names as input, and returns a list of the latest version of each collection.
+        If a collection name is supplied with a version suffix, this will be used instead of the latest version.
+        '''
+        has_version, no_version = [], []
+        for c in collection:
+            if c[-1].isdigit():
+                has_version.append(c)
+            else:
+                no_version.append(c)
+        new_collection = list(get_specific_latest_collections(no_version).values())
+        new_collection.extend(has_version)
+        return new_collection
 
     def wrapper(
         collection: list[str],
-        hierarchical_output: bool=False,
-        use_latest_collection: bool=False,
         *args,
+        hierarchical_output: bool = False,
+        use_latest_collection: bool = False,
         **kwargs
-    ):
+    ) -> dict:
 
         if use_latest_collection:
-            has_version, no_version = list(), list()
-            [has_version.append(c) if c[-1].isdigit() else no_version.append(c) for c in collection]
-            collection = list(get_specific_latest_collections(no_version).values())
-            collection.extend(has_version)
+            collection = apply_latest_collection(collection)
 
-        results = dict()
+        results = {}
         for col in collection:
             json_response = func(
                 *args,
@@ -557,12 +612,12 @@ def multiple_collections_extension(func: callable) -> dict:
 
             features = col_results['features']
             geojson['features'] += features
-            numberOfRequests = col_results.pop('numberOfRequests')
-            geojson['numberOfRequests'] += numberOfRequests
-            geojson['numberOfRequestsByCollection'][col] = numberOfRequests
-            numberReturned = col_results.pop('numberReturned')
-            geojson['numberReturned'] += numberReturned
-            geojson['numberReturnedByCollection'][col] = numberReturned
+            number_of_requests = col_results.pop('numberOfRequests')
+            geojson['numberOfRequests'] += number_of_requests
+            geojson['numberOfRequestsByCollection'][col] = number_of_requests
+            number_returned = col_results.pop('numberReturned')
+            geojson['numberReturned'] += number_returned
+            geojson['numberReturnedByCollection'][col] = number_returned
 
         geojson['timeStamp'] = datetime.now().isoformat()
 
@@ -570,7 +625,7 @@ def multiple_collections_extension(func: callable) -> dict:
 
     wrapper.__name__ = func.__name__ + '+multiple_collections_extension'
     funcname = func.__name__
-    wrapper.__doc__ = f"""
+    wrapper.__doc__ = f'''
     Extents the {funcname} function to handle multiple collections.
     Takes a list of collection names as input, alongside any other parameters which are passed to {funcname}.
     The function {funcname} will be run for each collection in turn, with the results returned in a dictionary mapping the collection names to the results.
@@ -579,13 +634,13 @@ def multiple_collections_extension(func: callable) -> dict:
     ____________________________________________________
     Docs for {funcname}:
         {func.__doc__}
-    """
+    '''
     return wrapper
 
 # All possible ways of combining different wrappers in combos with OAuth2
 
 items = ngd_items_request
-items_auth = OAauth2_manager(items)
+items_auth = oauth2_manager(items)
 
 items_limit = limit_extension(items)
 items_geom = multigeometry_search_extension(items)
