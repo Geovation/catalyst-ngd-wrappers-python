@@ -125,14 +125,15 @@ def oauth2_manager(func: callable) -> callable:
     A wrapper function, extending the input function to handle OAuth2 authentication using environment variables.
     '''
 
-    def wrapper(*args, **kwargs) -> dict:
+    def wrapper(*args, headers: dict = None, **kwargs) -> dict:
 
+        headers = headers.copy() if headers else {}
         kwargs_ = kwargs.copy()
 
-        access_token = os.environ.get('ACCESS_TOKEN')
-        kwargs_['access_token'] = access_token
-        response = func(*args, **kwargs_)
-        if response['code'] != 401:
+        access_token = os.environ.get('ACCESS_TOKEN', '')
+        headers['Authorization'] = f'Bearer {access_token}'
+        response = func(*args, headers = headers, **kwargs_)
+        if response.get('code') != 401:
             return response
         client_id = os.environ.get('CLIENT_ID')
         client_secret = os.environ.get('CLIENT_SECRET')
@@ -141,15 +142,15 @@ def oauth2_manager(func: callable) -> callable:
                 client_id=client_id,
                 client_secret=client_secret
             )
-        except PermissionError as e:
+        except PermissionError:
             return {
                 "code": 401,
-                "description": "Missing or invalid CLIENT_ID and CLIENT_SECRET. Make sure these are configured correctely in your environment variables.",
+                "description": "Missing or invalid CLIENT_ID and/or CLIENT_SECRET. Make sure these are configured correctely in your environment variables.",
                 "errorSource": "Catalyst Wrapper"
             }
         os.environ['ACCESS_TOKEN'] = access_token
-        kwargs_['access_token'] = access_token
-        response = func(*args, **kwargs_)
+        headers['Authorization'] = f'Bearer {access_token}'
+        response = func(*args, headers = headers, **kwargs_)
         return response
 
     wrapper.__name__ = func.__name__ + '+OAuth2_manager'

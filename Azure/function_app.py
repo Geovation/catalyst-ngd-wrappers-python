@@ -29,8 +29,9 @@ class LatestCollectionsSchema(Schema):
 
 class BaseSchema(Schema):
     '''Base schema for all queries'''
-    wkt = String(data_key='wkt', required=False)
+    wkt = String(required=False)
     use_latest_collection = Boolean(data_key='use-latest-collection', required=False)
+    access_token = String(data_key='access-token', required=False)
 
     class Meta:
         '''Allows additional fields to pass through to query_params'''
@@ -44,23 +45,23 @@ class AbstractHierarchicalSchema(BaseSchema):
 
 class LimitSchema(BaseSchema):
     '''limit is the maximum number of items to return'''
-    limit = Integer(data_key='limit', required=False)
+    limit = Integer(required=False)
     request_limit = Integer(data_key='request-limit', required=False)
 
 
 class GeomSchema(AbstractHierarchicalSchema):
     '''wkt is a well-known text representation of a geometry'''
-    wkt = String(data_key='wkt', required=True)
+    wkt = String(required=True)
 
 
 class ColSchema(AbstractHierarchicalSchema):
     '''col is a list of collections to query'''
-    collection = List(String(), data_key='collection', required=True)
+    collection = List(String(), required=True)
 
 
 class LimitGeomSchema(LimitSchema, GeomSchema):
     '''Combining Limit and Geom schemas'''
-    wkt = String(data_key='wkt', required=True)
+    wkt = String(required=True)
 
 
 class LimitColSchema(LimitSchema, ColSchema):
@@ -69,12 +70,12 @@ class LimitColSchema(LimitSchema, ColSchema):
 
 class GeomColSchema(GeomSchema, ColSchema):
     '''Combining Geom and Col schemas'''
-    wkt = String(data_key='wkt', required=True)
+    wkt = String(required=True)
 
 
 class LimitGeomColSchema(LimitSchema, GeomSchema, ColSchema):
     '''Combining Limit, Geom and Col schemas'''
-    wkt = String(data_key='wkt', required=True)
+    wkt = String(required=True)
 
 
 @app.function_name('http_latest_collections')
@@ -260,6 +261,7 @@ def construct_response(req: HttpRequest, schema_class: type, func: callable) -> 
             mimetype="application/json"
         )
     except Exception as e:
+        raise e  # Re-raise the exception to be caught by the outer try-except block
         code = 500
         error_string = str(e)
         error_response = json.dumps({
