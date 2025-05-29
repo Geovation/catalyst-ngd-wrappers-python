@@ -12,7 +12,7 @@ from shapely.errors import GEOSException
 
 UNIVERSAL_TIMEOUT: int = 20
 LOG_REQUEST_DETAILS: bool = os.environ.get('LOG_REQUEST_DETAILS', 'True') == 'True'
-QUERY_PARAM_TELEMETRY_LENGTH_LIMIT: int = int(os.environ.get('LOG_REQUEST_DETAILS', '200'))
+QUERY_PARAM_TELEMETRY_LENGTH_LIMIT: int = int(os.environ.get('QUERY_PARAM_TELEMETRY_LENGTH_LIMIT', '200'))
 
 def flatten_coords(list_of_lists: list) -> list:
     '''Flattens the coordinates of geojson features into a flattened list of coordinate pairs.'''
@@ -128,56 +128,47 @@ def get_access_token(client_id: str, client_secret: str) -> str:
     return token
 
 
-def oauth2_manager(func: callable) -> callable:
-    '''
-    A wrapper function, extending the input function to handle OAuth2 authentication using environment variables.
-    '''
+def oauth2_manager(*args, headers: dict = None, query_params: dict = None, **kwargs) -> dict:
 
-    def wrapper(*args, headers: dict = None, **kwargs) -> dict:
+    headers = headers.copy() if headers else {}
+    query_params = query_params.copy() if query_params else {}
 
-        headers = headers.copy() if headers else {}
-        kwargs_ = kwargs.copy()
+    def run_request(headers2: dict):
+        '''Runs the request with the given headers and returns the response.'''
+        return r.get(
+            *args,
+            headers=headers2,
+            params=query_params,
+            timeout=UNIVERSAL_TIMEOUT,
+            **kwargs
+        )
 
-        access_token = os.environ.get('ACCESS_TOKEN', '')
+    if headers.get('key') or query_params.get('key'):
+        return run_request(headers)
+    access_token = os.environ.get('ACCESS_TOKEN')
+    if access_token:
         headers['Authorization'] = f'Bearer {access_token}'
-        response = func(*args, headers=headers, **kwargs_)
+        response = run_request(headers)
         if response.get('code') != 401:
-            print('Using existing access token')
             return response
-        client_id = os.environ.get('CLIENT_ID')
-        client_secret = os.environ.get('CLIENT_SECRET')
-        print('retrieving new access token')
-        try:
-            access_token = get_access_token(
-                client_id=client_id,
-                client_secret=client_secret
-            )
-        except PermissionError:
-            return {
-                "code": 401,
-                "description": "Missing or invalid CLIENT_ID and/or CLIENT_SECRET. Make sure these are configured correctely in your environment variables.",
-                "errorSource": "Catalyst Wrapper"
-            }
-        os.environ['ACCESS_TOKEN'] = access_token
-        headers['Authorization'] = f'Bearer {access_token}'
-        response = func(*args, headers=headers, **kwargs_)
-        return response
 
-    wrapper.__name__ = func.__name__ + '+OAuth2_manager'
-    funcname = func.__name__
-    wrapper.__doc__ = f'''
-    An extension of the function {funcname} handling oauth2 authorisation.
-    IMPORTANT:
-        CLIENT_ID and CLIENT_SECRET must be set as environment variables for this extension to work.
-        This can be done using a .env file and load_dotenv()
-    Docs for OAuth2 with Ordnance Survey data can be found at https://osdatahub.os.uk/docs/oauth2/overview
-    The function automatically ensures a valid temporary access token (expiring after 5 minutes) is being used. This will either be an existing valid token, or a newly called one.
-
-    ____________________________________________________
-    Docs for {funcname}:
-        {func.__doc__}
-    '''
-    return wrapper
+    client_id = os.environ.get('CLIENT_ID')
+    client_secret = os.environ.get('CLIENT_SECRET')
+    try:
+        access_token = get_access_token(
+            client_id=client_id,
+            client_secret=client_secret
+        )
+    except PermissionError:
+        return {
+            "code": 401,
+            "description": "Missing or invalid CLIENT_ID and/or CLIENT_SECRET. Make sure these are configured correctely in your environment variables.",
+            "errorSource": "Catalyst Wrapper"
+        }
+    os.environ['ACCESS_TOKEN'] = access_token
+    headers['Authorization'] = f'Bearer {access_token}'
+    response = run_request(headers)
+    return response
 
 
 def wkt_to_spatial_filter(wkt: str, predicate: str = 'INTERSECTS') -> str:
@@ -217,6 +208,29 @@ def construct_filter_param(**params) -> str:
     filter_list = [f"({k}={v})" for k, v in params.items()]
     return 'and'.join(filter_list)
 
+def get_items(
+        url: str,
+        query_params: dict = None,
+        headers: dict = None,
+        **kwargs
+    ) -> dict:
+    '''
+    Calls items from the OS NGD API - Features
+    Parameters:
+        url (str) - the URL to call
+        query_params (dict, optional) - parameters to pass to the query as query parameters, supplied in a dictionary.
+        headers (dict, optional) - Headers to pass to the query. These can include bearer-token authentication.
+        **kwargs: other generic parameters to be passed to the requests.get()
+    Returns the features as a geojson, as per the OS NGD API.
+    '''
+    response = r.get(
+        url,
+        params=query_params,
+        headers=headers,
+        timeout=UNIVERSAL_TIMEOUT,
+        **kwargs
+    )
+    return response
 
 def ngd_items_request(
     collection: str,
@@ -277,6 +291,7 @@ def ngd_items_request(
 
     # Remove host header as this is automatically added by the requests library and can cause issues
     headers.pop('host', None)
+
     response = r.get(
         url,
         params=query_params,
@@ -345,10 +360,8 @@ def ngd_items_request(
         }
 
         for k, v in query_params.items():
-            if k == 'filter' and len(v) > QUERY_PARAM_TELEMETRY_LENGTH_LIMIT:
-                custom_dimensions['url.query_params.filter'] = 'REDACTED due to length'
-                continue
-            custom_dimensions[f'url.query_params.{str(k)}'] = v
+            value = 'REDACTED due to length' if k == 'filter' and len(v) > QUERY_PARAM_TELEMETRY_LENGTH_LIMIT else v
+            custom_dimensions[f'url.query_params.{str(k)}'] = value
 
         json_response['telemetryData'] = custom_dimensions
 
