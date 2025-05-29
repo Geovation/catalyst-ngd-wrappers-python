@@ -14,8 +14,8 @@ from NGD_API_Wrappers import *
 if os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"):
     configure_azure_monitor()
 
+LOG_REQUEST_DETAILS: bool = os.environ.get('LOG_REQUEST_DETAILS', 'True') == 'True'
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
-
 
 class LatestCollectionsSchema(Schema):
     '''Schema for the latest collections endpoint'''
@@ -249,19 +249,23 @@ def construct_response(req: HttpRequest, schema_class: type, func: callable) -> 
             headers=headers,
             **custom_params
         )
+
         descr = data.get('description')
         if data.get('errorSource') and isinstance(descr, str):
             fields = [x.replace('_', '-') for x in schema.fields if x != 'limit']
             attributes = ', '.join(fields)
             data['description'] = descr.format(attr=attributes)
-        json_data = json.dumps(data)
 
+        if LOG_REQUEST_DETAILS:
+            custom_dimensions = data.pop('telemetryData')
+            track_event('OS NGD API - Features', custom_dimensions=custom_dimensions)
+
+        json_data = json.dumps(data)
         return HttpResponse(
             body=json_data,
             mimetype="application/json"
         )
     except Exception as e:
-        raise e  # Re-raise the exception to be caught by the outer try-except block
         code = 500
         error_string = str(e)
         error_response = json.dumps({
