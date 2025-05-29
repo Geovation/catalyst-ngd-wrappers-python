@@ -12,6 +12,7 @@ from shapely.errors import GEOSException
 
 UNIVERSAL_TIMEOUT: int = 20
 LOG_REQUEST_DETAILS: bool = os.environ.get('LOG_REQUEST_DETAILS', 'True') == 'True'
+QUERY_PARAM_TELEMETRY_LENGTH_LIMIT: int = int(os.environ.get('LOG_REQUEST_DETAILS', '200'))
 
 def flatten_coords(list_of_lists: list) -> list:
     '''Flattens the coordinates of geojson features into a flattened list of coordinate pairs.'''
@@ -221,7 +222,7 @@ def ngd_items_request(
     collection: str,
     query_params: dict = None,
     filter_params: dict = None,
-    wkt=None,
+    wkt = None,
     use_latest_collection: bool = False,
     add_metadata: bool = True,
     headers: dict = None,
@@ -342,9 +343,12 @@ def ngd_items_request(
             'response.bbox': bbox,
             'response.numberReturned': json_response['numberReturned'],
         }
-        str_query_params = {f'url.query_params.{str(k)}': str(
-            v) for k, v in query_params.items()}
-        custom_dimensions.update(str_query_params)
+
+        for k, v in query_params.items():
+            if k == 'filter' and len(v) > QUERY_PARAM_TELEMETRY_LENGTH_LIMIT:
+                custom_dimensions['url.query_params.filter'] = 'REDACTED due to length'
+                continue
+            custom_dimensions[f'url.query_params.{str(k)}'] = v
 
         json_response['telemetryData'] = custom_dimensions
 
