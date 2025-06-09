@@ -257,8 +257,9 @@ def construct_response(req: HttpRequest, schema_class: type, func: callable) -> 
             data['description'] = descr.format(attr=attributes)
 
         if LOG_REQUEST_DETAILS:
-            custom_dimensions = data.pop('telemetryData')
-            track_event('OS NGD API - Features', custom_dimensions=custom_dimensions)
+            custom_dimensions = data.pop('telemetryData', None)
+            if custom_dimensions:
+                track_event('OS NGD API - Features', custom_dimensions=custom_dimensions)
 
         json_data = json.dumps(data)
         return HttpResponse(

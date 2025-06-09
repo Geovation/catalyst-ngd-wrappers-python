@@ -128,7 +128,7 @@ def get_access_token(client_id: str, client_secret: str) -> str:
     return token
 
 
-def oauth2_manager(*args, headers: dict = None, query_params: dict = None, **kwargs) -> dict:
+def oauth2_manager(headers: dict = None, query_params: dict = None, **kwargs) -> dict:
 
     headers = headers.copy() if headers else {}
     query_params = query_params.copy() if query_params else {}
@@ -136,7 +136,6 @@ def oauth2_manager(*args, headers: dict = None, query_params: dict = None, **kwa
     def run_request(headers2: dict):
         '''Runs the request with the given headers and returns the response.'''
         return r.get(
-            *args,
             headers=headers2,
             params=query_params,
             timeout=UNIVERSAL_TIMEOUT,
@@ -149,7 +148,7 @@ def oauth2_manager(*args, headers: dict = None, query_params: dict = None, **kwa
     if access_token:
         headers['Authorization'] = f'Bearer {access_token}'
         response = run_request(headers)
-        if response.get('code') != 401:
+        if response.status_code != 401:
             return response
 
     client_id = os.environ.get('CLIENT_ID')
@@ -292,11 +291,10 @@ def ngd_items_request(
     # Remove host header as this is automatically added by the requests library and can cause issues
     headers.pop('host', None)
 
-    response = r.get(
-        url,
-        params=query_params,
+    response = oauth2_manager(
+        url=url,
+        query_params=query_params,
         headers=headers,
-        timeout=UNIVERSAL_TIMEOUT,
         **kwargs
     )
 
@@ -671,7 +669,6 @@ def multiple_collections_extension(func: callable) -> dict:
 
 
 items = ngd_items_request
-items_auth = oauth2_manager(items)
 
 items_limit = limit_extension(items)
 items_geom = multigeometry_search_extension(items)
@@ -680,12 +677,3 @@ items_limit_geom = multigeometry_search_extension(items_limit)
 items_limit_col = multiple_collections_extension(items_limit)
 items_geom_col = multiple_collections_extension(items_geom)
 items_limit_geom_col = multiple_collections_extension(items_limit_geom)
-
-items_auth_limit = limit_extension(items_auth)
-items_auth_geom = multigeometry_search_extension(items_auth)
-items_auth_col = multiple_collections_extension(items_auth)
-items_auth_limit_geom = multigeometry_search_extension(items_auth_limit)
-items_auth_limit_col = multiple_collections_extension(items_auth_limit)
-items_auth_geom_col = multiple_collections_extension(items_auth_geom)
-items_auth_limit_geom_col = multiple_collections_extension(
-    items_auth_limit_geom)
