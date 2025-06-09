@@ -292,17 +292,6 @@ def http_base(req: HttpRequest) -> HttpResponse:
     return response
 
 
-@app.function_name('http_auth')
-@app.route("catalyst/features/{collection}/items/auth")
-def http_auth(req: HttpRequest) -> HttpResponse:
-    response = construct_response(
-        req,
-        BaseSchema,
-        items_auth
-    )
-    return response
-
-
 @app.function_name('http_limit')
 @app.route("catalyst/features/{collection}/items/limit")
 def http_limit(req: HttpRequest) -> HttpResponse:
@@ -376,71 +365,5 @@ def http_limit_geom_col(req: HttpRequest) -> HttpResponse:
         req,
         LimitGeomColSchema,
         items_limit_geom_col
-    )
-    return response
-
-
-@app.function_name('http_auth_limit')
-@app.route("catalyst/features/{collection}/items/auth-limit")
-def http_auth_limit(req: HttpRequest) -> HttpResponse:
-    response = construct_response(
-        req,
-        LimitSchema,
-        items_auth_limit
-    )
-    return response
-
-
-@app.function_name('http_auth_geom')
-@app.route("catalyst/features/{collection}/items/auth-geom")
-def http_auth_geom(req: HttpRequest) -> HttpResponse:
-    response = construct_response(
-        req,
-        GeomSchema,
-        items_auth_geom
-    )
-    return response
-
-
-@app.function_name('http_auth_col')
-@app.route("catalyst/features/multi-collection/items/auth-col")
-def http_auth_col(req: HttpRequest) -> HttpResponse:
-    response = construct_response(
-        req,
-        ColSchema,
-        items_auth_col
-    )
-    return response
-
-
-@app.function_name('http_auth_limit_geom')
-@app.route("catalyst/features/{collection}/items/auth-limit-geom")
-def http_auth_limit_geom(req: HttpRequest) -> HttpResponse:
-    response = construct_response(
-        req,
-        LimitGeomSchema,
-        items_auth_limit_geom
-    )
-    return response
-
-
-@app.function_name('http_auth_limit_col')
-@app.route("catalyst/features/multi-collection/items/auth-limit-col")
-def http_auth_geom_col(req: HttpRequest) -> HttpResponse:
-    response = construct_response(
-        req,
-        LimitColSchema,
-        items_auth_limit_col
-    )
-    return response
-
-
-@app.function_name('http_auth_limit_geom_col')
-@app.route("catalyst/features/multi-collection/items/auth-limit-geom-col")
-def http_auth_limit_geom_col(req: HttpRequest) -> HttpResponse:
-    response = construct_response(
-        req,
-        LimitGeomColSchema,
-        items_auth_limit_geom_col
     )
     return response
