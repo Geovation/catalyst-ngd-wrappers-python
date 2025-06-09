@@ -14,8 +14,8 @@ from NGD_API_Wrappers import *
 if os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"):
     configure_azure_monitor()
 
+LOG_REQUEST_DETAILS: bool = os.environ.get('LOG_REQUEST_DETAILS', 'True') == 'True'
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
-
 
 class LatestCollectionsSchema(Schema):
     '''Schema for the latest collections endpoint'''
@@ -249,19 +249,24 @@ def construct_response(req: HttpRequest, schema_class: type, func: callable) -> 
             headers=headers,
             **custom_params
         )
+
         descr = data.get('description')
         if data.get('errorSource') and isinstance(descr, str):
             fields = [x.replace('_', '-') for x in schema.fields if x != 'limit']
             attributes = ', '.join(fields)
             data['description'] = descr.format(attr=attributes)
-        json_data = json.dumps(data)
 
+        if LOG_REQUEST_DETAILS:
+            custom_dimensions = data.pop('telemetryData', None)
+            if custom_dimensions:
+                track_event('OS NGD API - Features', custom_dimensions=custom_dimensions)
+
+        json_data = json.dumps(data)
         return HttpResponse(
             body=json_data,
             mimetype="application/json"
         )
     except Exception as e:
-        raise e  # Re-raise the exception to be caught by the outer try-except block
         code = 500
         error_string = str(e)
         error_response = json.dumps({
@@ -283,17 +288,6 @@ def http_base(req: HttpRequest) -> HttpResponse:
         req,
         BaseSchema,
         items
-    )
-    return response
-
-
-@app.function_name('http_auth')
-@app.route("catalyst/features/{collection}/items/auth")
-def http_auth(req: HttpRequest) -> HttpResponse:
-    response = construct_response(
-        req,
-        BaseSchema,
-        items_auth
     )
     return response
 
@@ -371,71 +365,5 @@ def http_limit_geom_col(req: HttpRequest) -> HttpResponse:
         req,
         LimitGeomColSchema,
         items_limit_geom_col
-    )
-    return response
-
-
-@app.function_name('http_auth_limit')
-@app.route("catalyst/features/{collection}/items/auth-limit")
-def http_auth_limit(req: HttpRequest) -> HttpResponse:
-    response = construct_response(
-        req,
-        LimitSchema,
-        items_auth_limit
-    )
-    return response
-
-
-@app.function_name('http_auth_geom')
-@app.route("catalyst/features/{collection}/items/auth-geom")
-def http_auth_geom(req: HttpRequest) -> HttpResponse:
-    response = construct_response(
-        req,
-        GeomSchema,
-        items_auth_geom
-    )
-    return response
-
-
-@app.function_name('http_auth_col')
-@app.route("catalyst/features/multi-collection/items/auth-col")
-def http_auth_col(req: HttpRequest) -> HttpResponse:
-    response = construct_response(
-        req,
-        ColSchema,
-        items_auth_col
-    )
-    return response
-
-
-@app.function_name('http_auth_limit_geom')
-@app.route("catalyst/features/{collection}/items/auth-limit-geom")
-def http_auth_limit_geom(req: HttpRequest) -> HttpResponse:
-    response = construct_response(
-        req,
-        LimitGeomSchema,
-        items_auth_limit_geom
-    )
-    return response
-
-
-@app.function_name('http_auth_limit_col')
-@app.route("catalyst/features/multi-collection/items/auth-limit-col")
-def http_auth_geom_col(req: HttpRequest) -> HttpResponse:
-    response = construct_response(
-        req,
-        LimitColSchema,
-        items_auth_limit_col
-    )
-    return response
-
-
-@app.function_name('http_auth_limit_geom_col')
-@app.route("catalyst/features/multi-collection/items/auth-limit-geom-col")
-def http_auth_limit_geom_col(req: HttpRequest) -> HttpResponse:
-    response = construct_response(
-        req,
-        LimitGeomColSchema,
-        items_auth_limit_geom_col
     )
     return response
