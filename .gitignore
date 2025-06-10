@@ -11,3 +11,9 @@ __blobstorage__
 __queuestorage__
 .vscode
 app_flask/
+AzuriteConfig
+catalyst_ngd_wrappers/Azure/local.settings.json
+catalyst_ngd_wrappers/Azure/.funcignore
+catalyst_ngd_wrappers/Azure/__pycache__
+AzuriteConfig.txt
+.github
