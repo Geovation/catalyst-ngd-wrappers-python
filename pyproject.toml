@@ -3,7 +3,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [metadata]
-name = catalyst_ngd_wrappers
+name = "catalyst_ngd_wrappers"
 version = 0.0.1
 
 [options]
