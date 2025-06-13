@@ -128,7 +128,17 @@ def get_access_token(client_id: str, client_secret: str) -> str:
     return token
 
 
-def oauth2_manager(headers: dict = None, query_params: dict = None, **kwargs) -> dict:
+def run_oauth2_authenticated_request(headers: dict = None, query_params: dict = None, **kwargs) -> dict:
+    '''Manages the OAuth2 authentication for the OS NGD API - Features.
+    5-minute access tokens are stored as environment variables, and reused if available.
+    If no token is available, or if the token has expired, a new token is requested using the CLIENT_ID and CLIENT_SECRET environment variables.
+    If these are not set, it will return a 401 error.
+    Parameters:
+        headers (dict, optional) - Headers to pass to the query. These can include bearer-token authentication.
+        query_params (dict, optional) - Parameters to pass to the query as query parameters, supplied in a dictionary.
+        **kwargs: other generic parameters to be passed to the requests.get()
+    Returns the response from the request, or a 401 error if authentication fails.
+    '''
 
     headers = headers.copy() if headers else {}
     query_params = query_params.copy() if query_params else {}
@@ -291,7 +301,7 @@ def ngd_items_request(
     # Remove host header as this is automatically added by the requests library and can cause issues
     headers.pop('host', None)
 
-    response = oauth2_manager(
+    response = run_oauth2_authenticated_request(
         url=url,
         query_params=query_params,
         headers=headers,
