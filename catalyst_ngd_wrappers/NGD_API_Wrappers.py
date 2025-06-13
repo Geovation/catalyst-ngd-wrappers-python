@@ -1,6 +1,6 @@
 import re
 import os
-import json
+from json import JSONDecodeError
 from datetime import datetime, timedelta
 
 import requests as r
@@ -293,11 +293,27 @@ def prepare_telemetry_custom_dimensions(
     return custom_dimensions
 
 
+def handle_decode_error(error: JSONDecodeError, status_code: int) -> dict:
+    '''Handles JSONDecodeError exceptions by extracting the error message and returning a structured error response.'''
+    error_string = str(error)
+    if error_string.startswith('Expecting value'):
+        status_code = 414
+        error_string = {
+            'Error Text': error_string,
+            'Help (Catalyst)': 'This could be due to a request URI which is too long or an input geometry which is too complex.'
+        }
+    return {
+        "code": status_code,
+        "description": error_string,
+        "errorSource": "OS NGD API"
+    }
+
+
 def ngd_items_request(
     collection: str,
     query_params: dict = None,
     filter_params: dict = None,
-    wkt=None,
+    wkt = None,
     use_latest_collection: bool = False,
     add_metadata: bool = True,
     headers: dict = None,
@@ -355,19 +371,11 @@ def ngd_items_request(
 
     try:
         json_response = response.json()
-    except json.JSONDecodeError as e:
-        error_string = str(e)
-        if error_string.startswith('Expecting value'):
-            status_code = 414
-            error_string = {
-                'Error Text': error_string,
-                'Help (Catalyst)': 'This could be due to a request URI which is too long or an input geometry which is too complex.'
-            }
-        return {
-            "code": status_code,
-            "description": error_string,
-            "errorSource": "OS NGD API"
-        }
+    except JSONDecodeError as e:
+        return handle_decode_error(
+            error=e,
+            status_code=status_code
+        )
 
     if status_code >= 400:
         descr = json_response.get('description', '')
