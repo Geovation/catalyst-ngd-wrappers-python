@@ -4,6 +4,7 @@ import json
 from datetime import datetime, timedelta
 
 import requests as r
+from requests import Response
 
 from shapely import from_wkt
 from shapely.geometry import Point, LineString, Polygon
@@ -11,8 +12,11 @@ from shapely.geometry.base import BaseGeometry
 from shapely.errors import GEOSException
 
 UNIVERSAL_TIMEOUT: int = 20
-LOG_REQUEST_DETAILS: bool = os.environ.get('LOG_REQUEST_DETAILS', 'True') == 'True'
-QUERY_PARAM_TELEMETRY_LENGTH_LIMIT: int = int(os.environ.get('QUERY_PARAM_TELEMETRY_LENGTH_LIMIT', '200'))
+LOG_REQUEST_DETAILS: bool = os.environ.get(
+    'LOG_REQUEST_DETAILS', 'True') == 'True'
+QUERY_PARAM_TELEMETRY_LENGTH_LIMIT: int = int(
+    os.environ.get('QUERY_PARAM_TELEMETRY_LENGTH_LIMIT', '200'))
+
 
 def flatten_coords(list_of_lists: list) -> list:
     '''Flattens the coordinates of geojson features into a flattened list of coordinate pairs.'''
@@ -128,11 +132,16 @@ def get_access_token(client_id: str, client_secret: str) -> str:
     return token
 
 
-def run_oauth2_authenticated_request(headers: dict = None, query_params: dict = None, **kwargs) -> dict:
-    '''Manages the OAuth2 authentication for the OS NGD API - Features.
+def run_oauth2_authenticated_request(
+    headers: dict = None,
+    query_params: dict = None,
+    **kwargs
+) -> dict:
+    '''Runs OS NGD API - Features request, handling authentication via environment variables.
     5-minute access tokens are stored as environment variables, and reused if available.
     If no token is available, or if the token has expired, a new token is requested using the CLIENT_ID and CLIENT_SECRET environment variables.
     If these are not set, it will return a 401 error.
+    The url itself is not explicitly supplied, but expected as kwargs.
     Parameters:
         headers (dict, optional) - Headers to pass to the query. These can include bearer-token authentication.
         query_params (dict, optional) - Parameters to pass to the query as query parameters, supplied in a dictionary.
@@ -143,10 +152,10 @@ def run_oauth2_authenticated_request(headers: dict = None, query_params: dict = 
     headers = headers.copy() if headers else {}
     query_params = query_params.copy() if query_params else {}
 
-    def run_request(headers2: dict):
+    def run_request(headers_: dict) -> Response:
         '''Runs the request with the given headers and returns the response.'''
         return r.get(
-            headers=headers2,
+            headers=headers_,
             params=query_params,
             timeout=UNIVERSAL_TIMEOUT,
             **kwargs
@@ -217,35 +226,78 @@ def construct_filter_param(**params) -> str:
     filter_list = [f"({k}={v})" for k, v in params.items()]
     return 'and'.join(filter_list)
 
-def get_items(
+
+def prepare_parameters(
+    query_params: dict = None,
+    filter_params: dict = None,
+    wkt: str = None
+) -> dict:
+    '''
+    Enables simpler implementation of query parameters for OS NGD API - Features requests in the following ways:
+        - Simple equality (=) CQL filter parameters can be supplied as a dictionary - the CQL filter will be constructed automatically.
+        - Well-known-text (wkt) geometries can be supplied as a string or Shapely geometry object, and the full CQL INTERSECTS filter will be constructed automatically.
+        - Coordinate reference systems (CRS) can be supplied as EPSG numeric codes, and will be converted to the full OGC CRS URI format.
+    '''
+
+    if filter_params:
+        filters = construct_filter_param(**filter_params)
+        current_filters = query_params.get('filter')
+        query_params['filter'] = f'({current_filters})and{filters}' if current_filters else filters
+
+    if wkt:
+        spatial_filter = wkt_to_spatial_filter(wkt)
+        current_filters = query_params.get('filter')
+        query_params['filter'] = f'({current_filters})and{spatial_filter}' if current_filters else spatial_filter
+
+    for k, v in query_params.items():
+        if 'crs' in k and isinstance(v, int):
+            query_params[k] = f'http://www.opengis.net/def/crs/EPSG/0/{v}'
+
+    return query_params
+
+
+def prepare_telemetry_custom_dimensions(
+        json_response: dict,
         url: str,
-        query_params: dict = None,
-        headers: dict = None,
-        **kwargs
+        collection: str,
+        query_params: dict
     ) -> dict:
     '''
-    Calls items from the OS NGD API - Features
-    Parameters:
-        url (str) - the URL to call
-        query_params (dict, optional) - parameters to pass to the query as query parameters, supplied in a dictionary.
-        headers (dict, optional) - Headers to pass to the query. These can include bearer-token authentication.
-        **kwargs: other generic parameters to be passed to the requests.get()
-    Returns the features as a geojson, as per the OS NGD API.
+    Prepares custom telemetry dimensions for logging request details.
+    Extracts relevant information from the JSON response and query parameters, including bounding box, number of returned features, and request method.
+    Returns a dictionary of custom dimensions for telemetry logging.
     '''
-    response = r.get(
-        url,
-        params=query_params,
-        headers=headers,
-        timeout=UNIVERSAL_TIMEOUT,
-        **kwargs
-    )
-    return response
+
+    compiled_features = [feature['geometry']['coordinates']
+        for feature in json_response['features']]
+    flattened_coords = flatten_coords(compiled_features)
+    xcoords, ycoords = [], []
+    for pair in flattened_coords:
+        xcoords.append(pair[0])
+        ycoords.append(pair[1])
+    bbox = (min(xcoords), min(ycoords), max(xcoords),
+            max(ycoords)) if xcoords and ycoords else ''
+    custom_dimensions = {
+        'method': 'GET',
+        'url.path': url,
+        'url.path_params.collection': collection,
+        'response.bbox': bbox,
+        'response.numberReturned': json_response['numberReturned'],
+    }
+
+    for k, v in query_params.items():
+        value = 'REDACTED due to length' if k == 'filter' and len(
+            v) > QUERY_PARAM_TELEMETRY_LENGTH_LIMIT else v
+        custom_dimensions[f'url.query_params.{str(k)}'] = value
+
+    return custom_dimensions
+
 
 def ngd_items_request(
     collection: str,
     query_params: dict = None,
     filter_params: dict = None,
-    wkt = None,
+    wkt=None,
     use_latest_collection: bool = False,
     add_metadata: bool = True,
     headers: dict = None,
@@ -274,32 +326,23 @@ def ngd_items_request(
     '''
 
     query_params = query_params.copy() if query_params else {}
-    filter_params = filter_params.copy() if filter_params else {}
     headers = headers.copy() if headers else {}
 
     kwargs.pop('hierarchical_output', None)
+    # Remove host header as this is automatically added by the requests library and can cause issues
+    headers.pop('host', None)
 
     if use_latest_collection:
         collection = get_specific_latest_collections(
             [collection]).get(collection)
 
-    if filter_params:
-        filters = construct_filter_param(**filter_params)
-        current_filters = query_params.get('filter')
-        query_params['filter'] = f'({current_filters})and{filters}' if current_filters else filters
+    query_params = prepare_parameters(
+        query_params=query_params,
+        filter_params=filter_params,
+        wkt=wkt
+    )
 
-    if wkt:
-        spatial_filter = wkt_to_spatial_filter(wkt)
-        current_filters = query_params.get('filter')
-        query_params['filter'] = f'({current_filters})and{spatial_filter}' if current_filters else spatial_filter
-
-    for k, v in query_params.items():
-        if 'crs' in k and isinstance(v, int):
-            query_params[k] = f'http://www.opengis.net/def/crs/EPSG/0/{v}'
     url = f'https://api.os.uk/features/ngd/ofa/v1/collections/{collection}/items/'
-
-    # Remove host header as this is automatically added by the requests library and can cause issues
-    headers.pop('host', None)
 
     response = run_oauth2_authenticated_request(
         url=url,
@@ -350,28 +393,12 @@ def ngd_items_request(
         json_response['numberOfRequests'] = 1
 
     if LOG_REQUEST_DETAILS:
-        compiled_features = [feature['geometry']['coordinates']
-                            for feature in json_response['features']]
-        flattened_coords = flatten_coords(compiled_features)
-        xcoords, ycoords = [], []
-        for pair in flattened_coords:
-            xcoords.append(pair[0])
-            ycoords.append(pair[1])
-        bbox = (min(xcoords), min(ycoords), max(xcoords),
-                max(ycoords)) if xcoords and ycoords else ''
-        custom_dimensions = {
-            'method': 'GET',
-            'url.path': url,
-            'url.path_params.collection': collection,
-            'response.bbox': bbox,
-            'response.numberReturned': json_response['numberReturned'],
-        }
-
-        for k, v in query_params.items():
-            value = 'REDACTED due to length' if k == 'filter' and len(v) > QUERY_PARAM_TELEMETRY_LENGTH_LIMIT else v
-            custom_dimensions[f'url.query_params.{str(k)}'] = value
-
-        json_response['telemetryData'] = custom_dimensions
+        json_response['telemetryData'] = prepare_telemetry_custom_dimensions(
+            json_response=json_response,
+            url=url,
+            collection=collection,
+            query_params=query_params
+        )
 
     return json_response
 
@@ -406,7 +433,8 @@ def limit_extension(func: callable) -> callable:
         offset = 0
 
         if not limit and not request_limit:
-            raise AttributeError('''At least one of limit or request_limit must be provided to prevent indefinitely numerous requests and high costs. However, there is no upper limit to these values.''')
+            raise AttributeError(
+                '''At least one of limit or request_limit must be provided to prevent indefinitely numerous requests and high costs. However, there is no upper limit to these values.''')
 
         while (request_count != request_limit) and (not (limit) or offset < limit):
 
