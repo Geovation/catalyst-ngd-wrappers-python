@@ -417,7 +417,6 @@ def limit_extension(func: callable) -> callable:
     '''
 
     def wrapper(
-        *args,
         request_limit: int = 50,
         limit: int = None,
         query_params: dict = None,
@@ -454,7 +453,6 @@ def limit_extension(func: callable) -> callable:
             query_params['offset'] = offset
 
             json_response = func(
-                *args,
                 query_params=query_params,
                 add_metadata=False,
                 **kwargs
@@ -568,7 +566,6 @@ def multigeometry_search_extension(func: callable) -> callable:
         return geojson
 
     def wrapper(
-        *args,
         wkt: str,
         hierarchical_output: bool = False,
         **kwargs
@@ -589,7 +586,6 @@ def multigeometry_search_extension(func: callable) -> callable:
 
         for search_area, geom in enumerate(partial_geoms):
             json_response = func(
-                *args,
                 wkt=geom,
                 **kwargs
             )
@@ -649,7 +645,6 @@ def multiple_collections_extension(func: callable) -> dict:
 
     def wrapper(
         collection: list[str],
-        *args,
         hierarchical_output: bool = False,
         use_latest_collection: bool = False,
         **kwargs
@@ -661,7 +656,6 @@ def multiple_collections_extension(func: callable) -> dict:
         results = {}
         for col in collection:
             json_response = func(
-                *args,
                 collection=col,
                 hierarchical_output=hierarchical_output,
                 **kwargs
