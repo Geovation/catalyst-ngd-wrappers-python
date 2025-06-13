@@ -441,8 +441,11 @@ def limit_extension(func: callable) -> callable:
         offset = 0
 
         if not limit and not request_limit:
-            raise AttributeError(
-                '''At least one of limit or request_limit must be provided to prevent indefinitely numerous requests and high costs. However, there is no upper limit to these values.''')
+            return {
+                "code": 400,
+                "description": "At least one of limit or request_limit must be provided to prevent indefinitely numerous requests and high costs.",
+                "errorSource": "Catalyst Wrapper"
+            }
 
         while (request_count != request_limit) and (not (limit) or offset < limit):
 
