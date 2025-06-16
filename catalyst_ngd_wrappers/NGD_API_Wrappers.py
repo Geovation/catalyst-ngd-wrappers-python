@@ -250,9 +250,10 @@ def prepare_parameters(
         query_params['filter'] = f'({current_filters})and{spatial_filter}' if current_filters else spatial_filter
 
     for k, v in query_params.items():
-        if 'crs' in k and isinstance(v, int):
+        if 'crs' in k and v.isnumeric():
             query_params[k] = f'http://www.opengis.net/def/crs/EPSG/0/{v}'
-
+        elif v == 'CRS84':
+            query_params[k] = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
     return query_params
 
 
@@ -709,7 +710,6 @@ def multiple_collections_extension(func: callable) -> dict:
     return wrapper
 
 # All possible ways of combining different wrappers in combos with OAuth2
-
 
 items = ngd_items_request
 
