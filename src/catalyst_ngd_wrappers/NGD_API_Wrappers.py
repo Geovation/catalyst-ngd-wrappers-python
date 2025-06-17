@@ -178,7 +178,7 @@ def ngd_items_request(
     collection: str,
     query_params: dict = None,
     filter_params: dict = None,
-    wkt = None,
+    wkt: str = None,
     use_latest_collection: bool = False,
     headers: dict = None,
     **kwargs
