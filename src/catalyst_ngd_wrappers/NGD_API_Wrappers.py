@@ -9,7 +9,7 @@ from requests import Response
 from shapely import from_wkt
 from shapely.errors import GEOSException
 
-from .utils import prepare_parameters, handle_decode_error
+from .utils import prepare_parameters, handle_decode_error, multilevel_explode
 from .telemetry import LOG_REQUEST_DETAILS, prepare_telemetry_custom_dimensions
 
 UNIVERSAL_TIMEOUT: int = 20
