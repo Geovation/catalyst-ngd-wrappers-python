@@ -14,8 +14,6 @@ from .utils import prepare_parameters, handle_decode_error, prepare_telemetry_cu
 UNIVERSAL_TIMEOUT: int = 20
 LOG_REQUEST_DETAILS: bool = os.environ.get(
     'LOG_REQUEST_DETAILS', 'True') == 'True'
-QUERY_PARAM_TELEMETRY_LENGTH_LIMIT: int = int(
-    os.environ.get('QUERY_PARAM_TELEMETRY_LENGTH_LIMIT', '200'))
 
 
 def get_latest_collection_versions(flag_recent_updates: bool = True, recent_update_days: int = 31) -> dict:

@@ -1,7 +1,12 @@
+import os
 from json import JSONDecodeError
 
 from shapely.geometry import Point, LineString, Polygon
 from shapely.geometry.base import BaseGeometry
+
+
+QUERY_PARAM_TELEMETRY_LENGTH_LIMIT: int = int(
+    os.environ.get('QUERY_PARAM_TELEMETRY_LENGTH_LIMIT', '200'))
 
 def flatten_coords(list_of_lists: list) -> list:
     '''Flattens the coordinates of geojson features into a flattened list of coordinate pairs.'''
@@ -15,27 +20,27 @@ def flatten_coords(list_of_lists: list) -> list:
     return result
 
 
-def construct_bbox_filter(
-        bbox_tuple: tuple[float | int] | str = None,
-        xmin: float | int = None,
-        ymin: float | int = None,
-        xmax: float | int = None,
-        ymax: float | int = None
-) -> str:
-    '''Constructs a bounding box filter for an API query.'''
-    if bbox_tuple:
-        return str(bbox_tuple)[1:-1].replace(' ', '')
-    list_ = []
-    for z in [xmin, ymin, xmax, ymax]:
-        if z is None:
-            raise AttributeError(
-                'You must provide either bbox_tuple or all of [xmin, ymin, xmax, ymax]')
-        list_.append(str(z))
-    if xmin > xmax:
-        raise ValueError('xmax must be greater than xmin')
-    if ymin > ymax:
-        raise ValueError('ymax must be greater than ymin')
-    return ','.join(list_)
+# def construct_bbox_filter(
+#         bbox_tuple: tuple[float | int] | str = None,
+#         xmin: float | int = None,
+#         ymin: float | int = None,
+#         xmax: float | int = None,
+#         ymax: float | int = None
+# ) -> str:
+#     '''Constructs a bounding box filter for an API query.'''
+#     if bbox_tuple:
+#         return str(bbox_tuple)[1:-1].replace(' ', '')
+#     list_ = []
+#     for z in [xmin, ymin, xmax, ymax]:
+#         if z is None:
+#             raise AttributeError(
+#                 'You must provide either bbox_tuple or all of [xmin, ymin, xmax, ymax]')
+#         list_.append(str(z))
+#     if xmin > xmax:
+#         raise ValueError('xmax must be greater than xmin')
+#     if ymin > ymax:
+#         raise ValueError('ymax must be greater than ymin')
+#     return ','.join(list_)
 
 
 def wkt_to_spatial_filter(wkt: str, predicate: str = 'INTERSECTS') -> str:
