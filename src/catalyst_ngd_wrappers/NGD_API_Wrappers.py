@@ -7,11 +7,9 @@ import requests as r
 from requests import Response
 
 from shapely import from_wkt
-from shapely.geometry import Point, LineString, Polygon
-from shapely.geometry.base import BaseGeometry
 from shapely.errors import GEOSException
 
-from utils import *
+from .utils import prepare_parameters, handle_decode_error, prepare_telemetry_custom_dimensions
 
 UNIVERSAL_TIMEOUT: int = 20
 LOG_REQUEST_DETAILS: bool = os.environ.get(

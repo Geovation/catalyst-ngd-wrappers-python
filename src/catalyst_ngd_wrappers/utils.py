@@ -1,3 +1,6 @@
+from shapely.geometry import Point, LineString, Polygon
+from shapely.geometry.base import BaseGeometry
+
 def flatten_coords(list_of_lists: list) -> list:
     '''Flattens the coordinates of geojson features into a flattened list of coordinate pairs.'''
     result = []
