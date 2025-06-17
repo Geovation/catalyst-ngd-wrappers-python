@@ -1,3 +1,5 @@
+from json import JSONDecodeError
+
 from shapely.geometry import Point, LineString, Polygon
 from shapely.geometry.base import BaseGeometry
 
@@ -73,11 +75,14 @@ def prepare_parameters(
         current_filters = query_params.get('filter')
         query_params['filter'] = f'({current_filters})and{spatial_filter}' if current_filters else spatial_filter
 
-    for k, v in query_params.items():
-        if 'crs' in k and v.isnumeric():
-            query_params[k] = f'http://www.opengis.net/def/crs/EPSG/0/{v}'
-        elif v == 'CRS84':
-            query_params[k] = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+    for attr, val in query_params.items():
+        if 'crs' in attr and val.isnumeric():
+            authority_and_version = 'EPSG/0'
+        elif val == 'CRS84':
+            authority_and_version = 'OGC/1.3'
+        else:
+            continue
+        query_params[attr] = f'http://www.opengis.net/def/crs/{authority_and_version}/{val}'
     return query_params
 
 
