@@ -78,7 +78,7 @@ def prepare_parameters(
     for attr, val in query_params.items():
         if 'crs' in attr and val.isnumeric():
             authority_and_version = 'EPSG/0'
-        elif val == 'CRS84':
+        elif val.startswith('CRS'):
             authority_and_version = 'OGC/1.3'
         else:
             continue
