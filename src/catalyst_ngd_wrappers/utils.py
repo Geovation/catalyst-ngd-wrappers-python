@@ -76,7 +76,9 @@ def prepare_parameters(
         query_params['filter'] = f'({current_filters})and{spatial_filter}' if current_filters else spatial_filter
 
     for attr, val in query_params.items():
-        if 'crs' in attr and val.isnumeric():
+        if 'crs' not in attr:
+            continue
+        if val.isnumeric():
             authority_and_version = 'EPSG/0'
         elif val.startswith('CRS'):
             authority_and_version = 'OGC/1.3'
