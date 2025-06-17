@@ -180,7 +180,6 @@ def ngd_items_request(
     filter_params: dict = None,
     wkt = None,
     use_latest_collection: bool = False,
-    add_metadata: bool = True,
     headers: dict = None,
     **kwargs
 ) -> dict:
@@ -262,8 +261,7 @@ def ngd_items_request(
         feature['collection'] = collection
         feature['properties']['collection'] = collection
 
-    if add_metadata:
-        json_response['numberOfRequests'] = 1
+    json_response['numberOfRequests'] = 1
 
     if LOG_REQUEST_DETAILS:
         json_response['telemetryData'] = prepare_telemetry_custom_dimensions(
@@ -319,9 +317,9 @@ def limit_extension(func: callable) -> callable:
 
             json_response = func(
                 query_params=query_params,
-                add_metadata=False,
                 **kwargs
             )
+            json_response.pop('numberOfRequests')
             if json_response.get('code') and json_response['code'] >= 400:
                 return json_response
             request_count += 1
