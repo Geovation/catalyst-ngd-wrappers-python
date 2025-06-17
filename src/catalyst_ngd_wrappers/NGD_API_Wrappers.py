@@ -9,11 +9,10 @@ from requests import Response
 from shapely import from_wkt
 from shapely.errors import GEOSException
 
-from .utils import prepare_parameters, handle_decode_error, prepare_telemetry_custom_dimensions
+from .utils import prepare_parameters, handle_decode_error
+from .telemetry import LOG_REQUEST_DETAILS, prepare_telemetry_custom_dimensions
 
 UNIVERSAL_TIMEOUT: int = 20
-LOG_REQUEST_DETAILS: bool = os.environ.get(
-    'LOG_REQUEST_DETAILS', 'True') == 'True'
 
 
 def get_latest_collection_versions(flag_recent_updates: bool = True, recent_update_days: int = 31) -> dict:
