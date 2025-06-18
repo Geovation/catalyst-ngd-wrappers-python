@@ -43,7 +43,6 @@ pip install git+https://github.com/Geovation/catalyst-ngd-wrappers-python
 import catalyst_ngd_wrappers
 
 collection = ['bld-fts-building', 'trn-ntwk-road', 'wtr-fts-water']
-use_latest_collection = True
 wkt = 'GEOMETRYCOLLECTION (POLYGON ((400000 400000, 400090 400050, 400050 400000, 400000 40050, 400000 400000)), LINESTRING(399990 399990, 399000 399000))'
 filter_crs = 27700
 limit = 300
@@ -55,7 +54,7 @@ os.environ['CLIENT_SECRET'] = '<YOUR_PROJECT_API_SECRET>'
 data = items_limit_geom_col(
     collection = collection,
     wkt = wkt,
-    use_latest_collection = use_latest_collection,
+    use_latest_collection = True,
     hierarchical_output = True
     query_params = {
         'filter-crs': filter_crs,
