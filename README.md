@@ -44,7 +44,7 @@ import catalyst_ngd_wrappers
 
 collection = ['bld-fts-building', 'trn-ntwk-road', 'wtr-fts-water']
 wkt = 'GEOMETRYCOLLECTION (POLYGON ((400000 400000, 400090 400050, 400050 400000, 400000 40050, 400000 400000)), LINESTRING(399990 399990, 399000 399000))'
-filter_crs = 27700
+universal_crs = 27700
 limit = 300
 
 os.environ['CLIENT_ID'] = '<YOUR_PROJECT_API_KEY>'
@@ -57,7 +57,8 @@ data = items_limit_geom_col(
     use_latest_collection = True,
     hierarchical_output = True
     query_params = {
-        'filter-crs': filter_crs,
+        'wkt': universal_crs,
+        'filter-crs': universal_crs,
         'limit': limit,
     }
 )
