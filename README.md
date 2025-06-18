@@ -4,7 +4,7 @@ CatalyST_NGD_Wrappers is a package which extends and enhances the flexibility an
 
 ## Features
 
-1. Wrapping core OS NGD API - Features functionality
+1. Wrapping core [OS NGD API - Features](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features) functionality
     - Calls to the [Features](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/features) and [Collections](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/collections) endpoints can be made through python functions.
 2. Limit Extension
      - The default upper limit for the number of features returned can be extended above the default of 100 through automatic pagination.
@@ -27,7 +27,7 @@ CatalyST_NGD_Wrappers is a package which extends and enhances the flexibility an
 7. Filter Parameters
     - Rather than writing full CQL filters, filter parameters for equality (=) can be supplied as a dictionary.
     - Rather than writing a full CQL spatial filter, WKT geometries can be supplied as a separate parameter.
-8. - Automatic Oauth2 authentication
+8. Automatic Oauth2 authentication
     - When CLIENT_ID (project api key) and CLIENT_SECRET (project api secret) are provided as environment variables, authentication is processed automatically via 5-minute access tokens.
     - Once these environment variables are supplied, the user does not need to do any further action to authenticate their requests.
 
