@@ -147,7 +147,9 @@ def run_oauth2_authenticated_request(
         )
 
     if headers.get('key') or query_params.get('key'):
-        return run_request(headers)
+        response = run_request(headers)
+        return response.json()
+
     access_token = os.environ.get('ACCESS_TOKEN')
     if access_token:
         headers['Authorization'] = f'Bearer {access_token}'
@@ -171,7 +173,14 @@ def run_oauth2_authenticated_request(
     os.environ['ACCESS_TOKEN'] = access_token
     headers['Authorization'] = f'Bearer {access_token}'
     response = run_request(headers)
-    return response
+    try:
+        json_response = response.json()
+    except JSONDecodeError as e:
+        return handle_decode_error(
+            error = e,
+            status_code = response.status_code
+        )
+    return json_response
 
 
 def ngd_items_request(
@@ -224,22 +233,14 @@ def ngd_items_request(
 
     url = f'https://api.os.uk/features/ngd/ofa/v1/collections/{collection}/items/'
 
-    response = run_oauth2_authenticated_request(
+    json_response = run_oauth2_authenticated_request(
         url=url,
         query_params=query_params,
         headers=headers,
         **kwargs
     )
-
-    status_code = response.status_code
-
-    try:
-        json_response = response.json()
-    except JSONDecodeError as e:
-        return handle_decode_error(
-            error=e,
-            status_code=status_code
-        )
+    
+    status_code = json_response['status_code']
 
     if status_code >= 400:
         descr = json_response.get('description', '')
