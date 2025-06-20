@@ -116,7 +116,6 @@ def get_access_token(client_id: str, client_secret: str) -> str:
 
     return token
 
-
 def run_oauth2_authenticated_request(
     headers: dict = None,
     query_params: dict = None,
@@ -186,8 +185,6 @@ def run_oauth2_authenticated_request(
 def ngd_items_request(
     collection: str,
     query_params: dict = None,
-    filter_params: dict = None,
-    wkt: str = None,
     use_latest_collection: bool = False,
     headers: dict = None,
     **kwargs
@@ -227,8 +224,7 @@ def ngd_items_request(
 
     query_params = prepare_parameters(
         query_params=query_params,
-        filter_params=filter_params,
-        wkt=wkt
+        **kwargs
     )
 
     url = f'https://api.os.uk/features/ngd/ofa/v1/collections/{collection}/items/'
