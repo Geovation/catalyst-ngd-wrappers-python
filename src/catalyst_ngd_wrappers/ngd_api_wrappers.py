@@ -139,12 +139,20 @@ def run_oauth2_authenticated_request(
 
     def run_request(headers_: dict) -> Response:
         '''Runs the request with the given headers and returns the response.'''
-        return r.get(
+        response = r.get(
             headers=headers_,
             params=query_params,
             timeout=UNIVERSAL_TIMEOUT,
             **kwargs
         )
+        try:
+            json_response = response.json()
+        except JSONDecodeError as e:
+            return handle_decode_error(
+                error = e,
+                status_code = response.status_code
+            )
+        return json_response
 
     if headers.get('key') or query_params.get('key'):
         response = run_request(headers)
@@ -172,15 +180,7 @@ def run_oauth2_authenticated_request(
         }
     os.environ['ACCESS_TOKEN'] = access_token
     headers['Authorization'] = f'Bearer {access_token}'
-    response = run_request(headers)
-    try:
-        json_response = response.json()
-    except JSONDecodeError as e:
-        return handle_decode_error(
-            error = e,
-            status_code = response.status_code
-        )
-    return json_response
+    return run_request(headers)
 
 
 def ngd_items_request(
