@@ -122,7 +122,9 @@ def base_request(**kwargs):
         timeout=UNIVERSAL_TIMEOUT,
         **kwargs
     )
-    return response.json()
+    json_response = response.json()
+    json_response['code'] = response.status_code
+    return json_response
 
 
 def oauth2_authentication(func: callable) -> callable:
@@ -149,13 +151,12 @@ def oauth2_authentication(func: callable) -> callable:
 
         def run_request(headers_: dict) -> Response:
             '''Runs the request with the given headers and returns the response.'''
-            response = func(
-                headers=headers_,
-                params=query_params,
-                **kwargs
-            )
             try:
-                json_response = response.json()
+                json_response = func(
+                    headers=headers_,
+                    params=query_params,
+                    **kwargs
+                )
             except JSONDecodeError as e:
                 return handle_decode_error(
                     error = e,
