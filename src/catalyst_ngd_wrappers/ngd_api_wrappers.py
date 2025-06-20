@@ -201,6 +201,8 @@ def ngd_items_request(
     use_latest_collection: bool = False,
     authenticate: bool = True,
     log_request_details: bool = True,
+    wkt: str = None,
+    filter_params: dict = None,
     **kwargs
 ) -> dict:
     '''
@@ -238,20 +240,21 @@ def ngd_items_request(
 
     query_params = prepare_parameters(
         query_params=query_params,
-        **kwargs
+        wkt=wkt,
+        filter_params=filter_params,
     )
 
     url = f'https://api.os.uk/features/ngd/ofa/v1/collections/{collection}/items/'
 
     request_func = base_request if authenticate else oauth2_authentication(base_request)
-    
+
     json_response = request_func(
         url=url,
         params=query_params,
         headers=headers,
         **kwargs
     )
-    
+
     status_code = json_response['code']
 
     if status_code >= 400:
