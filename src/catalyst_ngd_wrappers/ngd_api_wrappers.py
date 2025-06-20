@@ -243,9 +243,7 @@ def ngd_items_request(
 
     url = f'https://api.os.uk/features/ngd/ofa/v1/collections/{collection}/items/'
 
-    request_func = base_request
-    if authenticate:
-        request_func = oauth2_authentication(base_request)
+    request_func = base_request if authenticate else oauth2_authentication(base_request)
     
     json_response = request_func(
         url=url,
