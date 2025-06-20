@@ -247,7 +247,7 @@ def ngd_items_request(
     
     json_response = request_func(
         url=url,
-        query_params=query_params,
+        params=query_params,
         headers=headers,
         **kwargs
     )
