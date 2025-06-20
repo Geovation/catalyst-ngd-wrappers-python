@@ -10,7 +10,7 @@ from shapely import from_wkt
 from shapely.errors import GEOSException
 
 from .utils import prepare_parameters, handle_decode_error, multilevel_explode
-from .telemetry import LOG_REQUEST_DETAILS, prepare_telemetry_custom_dimensions
+from .telemetry import prepare_telemetry_custom_dimensions
 
 UNIVERSAL_TIMEOUT: int = 20
 
@@ -117,79 +117,90 @@ def get_access_token(client_id: str, client_secret: str) -> str:
     return token
 
 
-def run_oauth2_authenticated_request(
-    headers: dict = None,
-    query_params: dict = None,
-    **kwargs
-) -> dict:
-    '''Runs OS NGD API - Features request, handling authentication via environment variables.
-    5-minute access tokens are stored as environment variables, and reused if available.
-    If no token is available, or if the token has expired, a new token is requested using the CLIENT_ID and CLIENT_SECRET environment variables.
-    If these are not set, it will return a 401 error.
-    The url itself is not explicitly supplied, but expected as kwargs.
-    Parameters:
-        headers (dict, optional) - Headers to pass to the query. These can include bearer-token authentication.
-        query_params (dict, optional) - Parameters to pass to the query as query parameters, supplied in a dictionary.
-        **kwargs: other generic parameters to be passed to the requests.get()
-    Returns the response from the request, or a 401 error if authentication fails.
-    '''
+def base_request(**kwargs):
+    response = r.get(
+        timeout=UNIVERSAL_TIMEOUT,
+        **kwargs
+    )
+    return response.json()
 
-    headers = headers.copy() if headers else {}
-    query_params = query_params.copy() if query_params else {}
 
-    def run_request(headers_: dict) -> Response:
-        '''Runs the request with the given headers and returns the response.'''
-        response = r.get(
-            headers=headers_,
-            params=query_params,
-            timeout=UNIVERSAL_TIMEOUT,
-            **kwargs
-        )
-        try:
-            json_response = response.json()
-        except JSONDecodeError as e:
-            return handle_decode_error(
-                error = e,
-                status_code = response.status_code
+def oauth2_authentication(func: callable) -> callable:
+
+    def wrapper(
+        headers: dict = None,
+        query_params: dict = None,
+        **kwargs
+    ) -> dict:
+        '''Runs OS NGD API - Features request, handling authentication via environment variables.
+        5-minute access tokens are stored as environment variables, and reused if available.
+        If no token is available, or if the token has expired, a new token is requested using the CLIENT_ID and CLIENT_SECRET environment variables.
+        If these are not set, it will return a 401 error.
+        The url itself is not explicitly supplied, but expected as kwargs.
+        Parameters:
+            headers (dict, optional) - Headers to pass to the query. These can include bearer-token authentication.
+            query_params (dict, optional) - Parameters to pass to the query as query parameters, supplied in a dictionary.
+            **kwargs: other generic parameters to be passed to the requests.get()
+        Returns the response from the request, or a 401 error if authentication fails.
+        '''
+
+        headers = headers.copy() if headers else {}
+        query_params = query_params.copy() if query_params else {}
+
+        def run_request(headers_: dict) -> Response:
+            '''Runs the request with the given headers and returns the response.'''
+            response = func(
+                headers=headers_,
+                params=query_params,
+                **kwargs
             )
-        return json_response
+            try:
+                json_response = response.json()
+            except JSONDecodeError as e:
+                return handle_decode_error(
+                    error = e,
+                    status_code = response.status_code
+                )
+            return json_response
 
-    if headers.get('key') or query_params.get('key'):
-        response = run_request(headers)
-        return response.json()
+        if headers.get('key') or query_params.get('key'):
+            response = run_request(headers)
+            return response.json()
 
-    access_token = os.environ.get('ACCESS_TOKEN')
-    if access_token:
+        access_token = os.environ.get('ACCESS_TOKEN')
+        if access_token:
+            headers['Authorization'] = f'Bearer {access_token}'
+            response = run_request(headers)
+            if response.status_code != 401:
+                return response
+
+        client_id = os.environ.get('CLIENT_ID')
+        client_secret = os.environ.get('CLIENT_SECRET')
+        try:
+            access_token = get_access_token(
+                client_id=client_id,
+                client_secret=client_secret
+            )
+        except PermissionError:
+            return {
+                "code": 401,
+                "description": "Missing or invalid CLIENT_ID and/or CLIENT_SECRET. Make sure these are configured correctely in your environment variables.",
+                "errorSource": "Catalyst Wrapper"
+            }
+        os.environ['ACCESS_TOKEN'] = access_token
         headers['Authorization'] = f'Bearer {access_token}'
-        response = run_request(headers)
-        if response.status_code != 401:
-            return response
-
-    client_id = os.environ.get('CLIENT_ID')
-    client_secret = os.environ.get('CLIENT_SECRET')
-    try:
-        access_token = get_access_token(
-            client_id=client_id,
-            client_secret=client_secret
-        )
-    except PermissionError:
-        return {
-            "code": 401,
-            "description": "Missing or invalid CLIENT_ID and/or CLIENT_SECRET. Make sure these are configured correctely in your environment variables.",
-            "errorSource": "Catalyst Wrapper"
-        }
-    os.environ['ACCESS_TOKEN'] = access_token
-    headers['Authorization'] = f'Bearer {access_token}'
-    return run_request(headers)
+        return run_request(headers)
+    
+    return wrapper
 
 
 def ngd_items_request(
     collection: str,
     query_params: dict = None,
-    filter_params: dict = None,
-    wkt: str = None,
-    use_latest_collection: bool = False,
     headers: dict = None,
+    use_latest_collection: bool = False,
+    authenticate: bool = True,
+    log_request_details: bool = True,
     **kwargs
 ) -> dict:
     '''
@@ -227,13 +238,14 @@ def ngd_items_request(
 
     query_params = prepare_parameters(
         query_params=query_params,
-        filter_params=filter_params,
-        wkt=wkt
+        **kwargs
     )
 
     url = f'https://api.os.uk/features/ngd/ofa/v1/collections/{collection}/items/'
 
-    json_response = run_oauth2_authenticated_request(
+    request_func = base_request if authenticate else oauth2_authentication(base_request)
+    
+    json_response = request_func(
         url=url,
         query_params=query_params,
         headers=headers,
@@ -264,7 +276,7 @@ def ngd_items_request(
 
     json_response['numberOfRequests'] = 1
 
-    if LOG_REQUEST_DETAILS:
+    if log_request_details:
         json_response['telemetryData'] = prepare_telemetry_custom_dimensions(
             json_response=json_response,
             url=url,

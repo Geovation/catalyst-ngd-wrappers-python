@@ -34,7 +34,8 @@ def construct_filter_param(**params) -> str:
 def prepare_parameters(
     query_params: dict = None,
     filter_params: dict = None,
-    wkt: str = None
+    wkt: str = None,
+    **kwargs
 ) -> dict:
     '''
     Enables simpler implementation of query parameters for OS NGD API - Features requests in the following ways:
