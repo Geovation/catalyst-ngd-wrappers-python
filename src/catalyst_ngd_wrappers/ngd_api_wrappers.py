@@ -10,7 +10,7 @@ from shapely import from_wkt
 from shapely.errors import GEOSException
 
 from .utils import prepare_parameters, handle_decode_error, multilevel_explode
-from .telemetry import LOG_REQUEST_DETAILS, prepare_telemetry_custom_dimensions
+from .telemetry import prepare_telemetry_custom_dimensions
 
 UNIVERSAL_TIMEOUT: int = 20
 
@@ -197,8 +197,8 @@ def oauth2_authentication(func: callable) -> callable:
 def ngd_items_request(
     collection: str,
     query_params: dict = None,
-    use_latest_collection: bool = False,
     headers: dict = None,
+    use_latest_collection: bool = False,
     authenticate: bool = True,
     log_request_details: bool = True,
     **kwargs
