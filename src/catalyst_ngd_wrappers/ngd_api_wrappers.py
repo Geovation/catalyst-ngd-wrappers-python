@@ -240,7 +240,7 @@ def ngd_items_request(
         **kwargs
     )
     
-    status_code = json_response['status_code']
+    status_code = json_response['code']
 
     if status_code >= 400:
         descr = json_response.get('description', '')
