@@ -26,7 +26,7 @@ def get_latest_collection_versions(flag_recent_updates: bool = True, recent_upda
 
     response = r.get(
         'https://api.os.uk/features/ngd/ofa/v1/collections/', timeout=UNIVERSAL_TIMEOUT)
-    collections_data = response.json()['collections']
+    collections_data = response.json().get('collections')
     collections_list = [collection['id'] for collection in collections_data]
 
     collections_dict = {}
@@ -267,7 +267,7 @@ def ngd_items_request(
         elif descr.startswith('Not supported query parameter'):
             descr = descr.replace('Supported parameters are',
                                   'Supported NGD parameters are')
-            descr += '. Additional supported Catalyst parameters for this function are: {attr}.'
+            descr += ', key. Additional supported Catalyst parameters for this function are: {attr}.'
             json_response['description'] = descr
         if not json_response.get('code'):
             json_response = {'code': status_code} | json_response
