@@ -267,7 +267,7 @@ def ngd_items_request(
         elif descr.startswith('Not supported query parameter'):
             descr = descr.replace('Supported parameters are',
                                   'Supported NGD parameters are')
-            descr += '. Additional supported Catalyst parameters for this function are: {attr}.'
+            descr += ', key. Additional supported Catalyst parameters for this function are: {attr}.'
             json_response['description'] = descr
         if not json_response.get('code'):
             json_response = {'code': status_code} | json_response
