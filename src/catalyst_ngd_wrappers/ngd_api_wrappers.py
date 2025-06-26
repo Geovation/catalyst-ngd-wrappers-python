@@ -26,7 +26,7 @@ def get_latest_collection_versions(flag_recent_updates: bool = True, recent_upda
 
     response = r.get(
         'https://api.os.uk/features/ngd/ofa/v1/collections/', timeout=UNIVERSAL_TIMEOUT)
-    collections_data = response.json()['collections']
+    collections_data = response.json().get('collections')
     collections_list = [collection['id'] for collection in collections_data]
 
     collections_dict = {}
