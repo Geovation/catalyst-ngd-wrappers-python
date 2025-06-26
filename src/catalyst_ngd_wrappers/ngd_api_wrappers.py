@@ -336,7 +336,7 @@ def limit_extension(func: callable) -> callable:
                 query_params=query_params,
                 **kwargs
             )
-            json_response.pop('numberOfRequests')
+            json_response.pop('numberOfRequests', None)
             if json_response.get('code') and json_response['code'] >= 400:
                 return json_response
             request_count += 1
