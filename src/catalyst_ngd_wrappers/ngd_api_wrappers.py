@@ -118,6 +118,7 @@ def get_access_token(client_id: str, client_secret: str) -> str:
 
 
 def base_request(**kwargs):
+    '''A basic wrapper around requests.get() to return a JSON response, with the response code added.'''
     response = r.get(
         timeout=UNIVERSAL_TIMEOUT,
         **kwargs
@@ -128,6 +129,9 @@ def base_request(**kwargs):
 
 
 def oauth2_authentication(func: callable) -> callable:
+    '''
+    A wrapper function, extending the input function to handle authentication via the OS oauth2 API. 
+    '''
 
     def wrapper(
         headers: dict = None,
@@ -191,6 +195,25 @@ def oauth2_authentication(func: callable) -> callable:
         os.environ['ACCESS_TOKEN'] = access_token
         headers['Authorization'] = f'Bearer {access_token}'
         return run_request(headers)
+    
+    wrapper.__name__ = func.__name__ + '+oauth2_authentication'
+    funcname = func.__name__
+    wrapper.__doc__ = f'''
+    A wrapper function to handle authentication for OS NGD API - Features requests, handling authentication via environment variables.
+    5-minute access tokens are stored as environment variables, and reused if available.
+    If no token is available, or if the token has expired, a new token is requested using the CLIENT_ID and CLIENT_SECRET environment variables.
+    If these are not set, it will return a 401 error.
+    The url itself is not explicitly supplied, but expected as kwargs.
+    Parameters:
+        headers (dict, optional) - Headers to pass to the query. These can include bearer-token authentication.
+        query_params (dict, optional) - Parameters to pass to the query as query parameters, supplied in a dictionary.
+        **kwargs: other generic parameters to be passed to the requests.get()
+    Returns the response from the request, or a 401 error if authentication fails.
+
+    ____________________________________________________
+    Docs for {funcname}:
+        {func.__doc__}
+    '''
     
     return wrapper
 
