@@ -14,7 +14,6 @@ from .telemetry import prepare_telemetry_custom_dimensions
 
 UNIVERSAL_TIMEOUT: int = 20
 
-
 def get_latest_collection_versions(flag_recent_updates: bool = True, recent_update_days: int = 31) -> dict:
     '''
     Returns the latest collection versions of each NGD collection.
@@ -81,9 +80,9 @@ def get_specific_latest_collections(collection: list[str], **kwargs) -> str:
             col: latest_collections[col] for col in collection}
     except KeyError as e:
         return {
-            "code": 404,
-            "description": f"Collection {e} is not a supported Collection base name. The name must not include a version suffix. Please refer to the documentation for a list of supported Collections.",
-            "help": "https://api.os.uk/features/ngd/ofa/v1/collections"
+            'code': 404,
+            'description': f'Collection {e} is not a supported Collection base name. The name must not include a version suffix. Please refer to the documentation for a list of supported Collections.',
+            'help': 'https://api.os.uk/features/ngd/ofa/v1/collections'
         }
 
     return specific_latest_collections
@@ -96,10 +95,10 @@ def get_access_token(client_id: str, client_secret: str) -> str:
     Takes the project client_id and client_secret as input
     '''
 
-    url = "https://api.os.uk/oauth2/token/v1"
+    url = 'https://api.os.uk/oauth2/token/v1'
 
     data = {
-        "grant_type": "client_credentials"
+        'grant_type': 'client_credentials'
     }
 
     response = r.post(
@@ -112,7 +111,7 @@ def get_access_token(client_id: str, client_secret: str) -> str:
     json_response = response.json()
     if response.status_code == 401:
         raise PermissionError(json_response)
-    token = json_response["access_token"]
+    token = json_response['access_token']
 
     return token
 
@@ -188,9 +187,9 @@ def oauth2_authentication(func: callable) -> callable:
             )
         except PermissionError:
             return {
-                "code": 401,
-                "description": "Missing or invalid CLIENT_ID and/or CLIENT_SECRET. Make sure these are configured correctely in your environment variables.",
-                "errorSource": "Catalyst Wrapper"
+                'code': 401,
+                'description': 'Missing or invalid CLIENT_ID and/or CLIENT_SECRET. Make sure these are configured correctely in your environment variables.',
+                'errorSource': 'Catalyst Wrapper'
             }
         os.environ['ACCESS_TOKEN'] = access_token
         headers['Authorization'] = f'Bearer {access_token}'
@@ -330,9 +329,9 @@ def limit_extension(func: callable) -> callable:
 
         if 'offset' in query_params:
             return {
-                "code": 400,
-                "description": "'offset' is not a valid attribute for functions using this Catalyst wrapper.",
-                "errorSource": "Catalyst Wrapper"
+                'code': 400,
+                'description': "'offset' is not a valid attribute for functions using this Catalyst wrapper.",
+                'errorSource': 'Catalyst Wrapper'
             }
 
         features = []
@@ -344,9 +343,9 @@ def limit_extension(func: callable) -> callable:
 
         if not limit and not request_limit:
             return {
-                "code": 400,
-                "description": "At least one of limit or request_limit must be provided to prevent indefinitely numerous requests and high costs.",
-                "errorSource": "Catalyst Wrapper"
+                'code': 400,
+                'description': 'At least one of limit or request_limit must be provided to prevent indefinitely numerous requests and high costs.',
+                'errorSource': 'Catalyst Wrapper'
             }
 
         while (request_count != request_limit) and (not (limit) or offset < limit):
@@ -371,12 +370,12 @@ def limit_extension(func: callable) -> callable:
             offset += 100
 
         geojson = {
-            "type": "FeatureCollection",
-            "numberOfRequests": request_count,
-            "numberReturned": len(features),
-            "timeStamp": datetime.now().isoformat(),
-            "collection": kwargs.get('collection'),
-            "features": features
+            'type': 'FeatureCollection',
+            'numberOfRequests': request_count,
+            'numberReturned': len(features),
+            'timeStamp': datetime.now().isoformat(),
+            'collection': kwargs.get('collection'),
+            'features': features
         }
         return geojson
 
@@ -461,10 +460,10 @@ def multigeometry_search_extension(func: callable) -> callable:
             full_geom = from_wkt(wkt) if isinstance(wkt, str) else wkt
         except GEOSException:
             return {
-                "code": 400,
-                "description": "The input geometry is not valid. Please ensure you have the correct formatting for your input geometry type.",
-                "help": "http://libgeos.org/specifications/wkt/",
-                "errorSource": "Catalyst Wrapper"
+                'code': 400,
+                'description': 'The input geometry is not valid. Please ensure you have the correct formatting for your input geometry type.',
+                'help': 'http://libgeos.org/specifications/wkt/',
+                'errorSource': 'Catalyst Wrapper'
             }
 
         search_areas = []
@@ -482,7 +481,7 @@ def multigeometry_search_extension(func: callable) -> callable:
 
         if hierarchical_output:
             response = {
-                "searchAreas": search_areas
+                'searchAreas': search_areas
             }
             return response
 
