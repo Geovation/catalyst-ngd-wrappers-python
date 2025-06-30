@@ -2,6 +2,7 @@ import re
 import os
 from json import JSONDecodeError
 from datetime import datetime, timedelta
+import time
 
 import requests as r
 
@@ -33,9 +34,11 @@ def get_latest_collection_versions(flag_recent_updates: bool = True, recent_upda
         except (r.RequestException, ValueError) as e:
             if attempt < retries - 1:
                 raise e
-    collections_list = [collection['id'] for collection in collections_data]
+            time.sleep(2 ** attempt)  # Exponential backoff
 
+    collections_list = [collection['id'] for collection in collections_data]
     collections_dict = {}
+
     for col in collections_list:
         basename, version = re.split(r'-(?=[^-]*$)', col)
         version = int(version)
