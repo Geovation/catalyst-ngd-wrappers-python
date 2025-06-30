@@ -32,9 +32,14 @@ def get_latest_collection_versions(flag_recent_updates: bool = True, recent_upda
             collections_data = response.json().get('collections')
             break
         except (r.RequestException, ValueError) as e:
+            return response.json() # Temporary Troubleshoot
             if attempt < retries - 1:
                 raise e
             time.sleep(2 ** attempt)  # Exponential backoff
+        except Exception as e: # Temporary troubleshoot
+            error = response.json()
+            error.update({'error': str(e)})
+            return error
 
     collections_list = [collection['id'] for collection in collections_data]
     collections_dict = {}
