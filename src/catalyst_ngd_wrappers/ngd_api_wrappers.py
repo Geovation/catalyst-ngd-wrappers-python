@@ -2,9 +2,9 @@ import re
 import os
 from json import JSONDecodeError
 from datetime import datetime, timedelta
+import time
 
 import requests as r
-from requests import Response
 
 from shapely import from_wkt
 from shapely.errors import GEOSException
@@ -14,7 +14,6 @@ from .telemetry import prepare_telemetry_custom_dimensions
 
 UNIVERSAL_TIMEOUT: int = 20
 
-
 def get_latest_collection_versions(flag_recent_updates: bool = True, recent_update_days: int = 31) -> dict:
     '''
     Returns the latest collection versions of each NGD collection.
@@ -23,13 +22,28 @@ def get_latest_collection_versions(flag_recent_updates: bool = True, recent_upda
     This can be used to ensure that software is always using the latest version of a feature collection.
     More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
     '''
+    retries = 3
+    
+    for attempt in range(retries):
+        try:
+            response = r.get(
+                'https://api.os.uk/features/ngd/ofa/v1/collections/', timeout=UNIVERSAL_TIMEOUT)
+            response.raise_for_status()
+            collections_data = response.json().get('collections')
+            break
+        except (r.RequestException, ValueError) as e:
+            return response.json() # Temporary Troubleshoot
+            if attempt < retries - 1:
+                raise e
+            time.sleep(2 ** attempt)  # Exponential backoff
+        except Exception as e: # Temporary troubleshoot
+            error = response.json()
+            error.update({'error': str(e)})
+            return error
 
-    response = r.get(
-        'https://api.os.uk/features/ngd/ofa/v1/collections/', timeout=UNIVERSAL_TIMEOUT)
-    collections_data = response.json().get('collections')
     collections_list = [collection['id'] for collection in collections_data]
-
     collections_dict = {}
+
     for col in collections_list:
         basename, version = re.split(r'-(?=[^-]*$)', col)
         version = int(version)
@@ -81,9 +95,9 @@ def get_specific_latest_collections(collection: list[str], **kwargs) -> str:
             col: latest_collections[col] for col in collection}
     except KeyError as e:
         return {
-            "code": 404,
-            "description": f"Collection {e} is not a supported Collection base name. The name must not include a version suffix. Please refer to the documentation for a list of supported Collections.",
-            "help": "https://api.os.uk/features/ngd/ofa/v1/collections"
+            'code': 404,
+            'description': f'Collection {e} is not a supported Collection base name. The name must not include a version suffix. Please refer to the documentation for a list of supported Collections.',
+            'help': 'https://api.os.uk/features/ngd/ofa/v1/collections'
         }
 
     return specific_latest_collections
@@ -96,10 +110,10 @@ def get_access_token(client_id: str, client_secret: str) -> str:
     Takes the project client_id and client_secret as input
     '''
 
-    url = "https://api.os.uk/oauth2/token/v1"
+    url = 'https://api.os.uk/oauth2/token/v1'
 
     data = {
-        "grant_type": "client_credentials"
+        'grant_type': 'client_credentials'
     }
 
     response = r.post(
@@ -112,12 +126,13 @@ def get_access_token(client_id: str, client_secret: str) -> str:
     json_response = response.json()
     if response.status_code == 401:
         raise PermissionError(json_response)
-    token = json_response["access_token"]
+    token = json_response['access_token']
 
     return token
 
 
 def base_request(**kwargs):
+    '''A basic wrapper around requests.get() to return a JSON response, with the response code added.'''
     response = r.get(
         timeout=UNIVERSAL_TIMEOUT,
         **kwargs
@@ -128,6 +143,9 @@ def base_request(**kwargs):
 
 
 def oauth2_authentication(func: callable) -> callable:
+    '''
+    A wrapper function, extending the input function to handle authentication via the OS oauth2 API. 
+    '''
 
     def wrapper(
         headers: dict = None,
@@ -149,7 +167,7 @@ def oauth2_authentication(func: callable) -> callable:
         headers = headers.copy() if headers else {}
         query_params = query_params.copy() if query_params else {}
 
-        def run_request(headers_: dict) -> Response:
+        def run_request(headers_: dict) -> dict:
             '''Runs the request with the given headers and returns the response.'''
             try:
                 json_response = func(
@@ -158,10 +176,7 @@ def oauth2_authentication(func: callable) -> callable:
                     **kwargs
                 )
             except JSONDecodeError as e:
-                return handle_decode_error(
-                    error = e,
-                    status_code = response.status_code
-                )
+                return handle_decode_error(error = e)
             return json_response
 
         if headers.get('key') or query_params.get('key'):
@@ -184,13 +199,32 @@ def oauth2_authentication(func: callable) -> callable:
             )
         except PermissionError:
             return {
-                "code": 401,
-                "description": "Missing or invalid CLIENT_ID and/or CLIENT_SECRET. Make sure these are configured correctely in your environment variables.",
-                "errorSource": "Catalyst Wrapper"
+                'code': 401,
+                'description': 'Missing or invalid CLIENT_ID and/or CLIENT_SECRET. Make sure these are configured correctely in your environment variables.',
+                'errorSource': 'Catalyst Wrapper'
             }
         os.environ['ACCESS_TOKEN'] = access_token
         headers['Authorization'] = f'Bearer {access_token}'
         return run_request(headers)
+    
+    wrapper.__name__ = func.__name__ + '+oauth2_authentication'
+    funcname = func.__name__
+    wrapper.__doc__ = f'''
+    A wrapper function to handle authentication for OS NGD API - Features requests, handling authentication via environment variables.
+    5-minute access tokens are stored as environment variables, and reused if available.
+    If no token is available, or if the token has expired, a new token is requested using the CLIENT_ID and CLIENT_SECRET environment variables.
+    If these are not set, it will return a 401 error.
+    The url itself is not explicitly supplied, but expected as kwargs.
+    Parameters:
+        headers (dict, optional) - Headers to pass to the query. These can include bearer-token authentication.
+        query_params (dict, optional) - Parameters to pass to the query as query parameters, supplied in a dictionary.
+        **kwargs: other generic parameters to be passed to the requests.get()
+    Returns the response from the request, or a 401 error if authentication fails.
+
+    ____________________________________________________
+    Docs for {funcname}:
+        {func.__doc__}
+    '''
     
     return wrapper
 
@@ -307,9 +341,9 @@ def limit_extension(func: callable) -> callable:
 
         if 'offset' in query_params:
             return {
-                "code": 400,
-                "description": "'offset' is not a valid attribute for functions using this Catalyst wrapper.",
-                "errorSource": "Catalyst Wrapper"
+                'code': 400,
+                'description': "'offset' is not a valid attribute for functions using this Catalyst wrapper.",
+                'errorSource': 'Catalyst Wrapper'
             }
 
         features = []
@@ -321,9 +355,9 @@ def limit_extension(func: callable) -> callable:
 
         if not limit and not request_limit:
             return {
-                "code": 400,
-                "description": "At least one of limit or request_limit must be provided to prevent indefinitely numerous requests and high costs.",
-                "errorSource": "Catalyst Wrapper"
+                'code': 400,
+                'description': 'At least one of limit or request_limit must be provided to prevent indefinitely numerous requests and high costs.',
+                'errorSource': 'Catalyst Wrapper'
             }
 
         while (request_count != request_limit) and (not (limit) or offset < limit):
@@ -348,12 +382,12 @@ def limit_extension(func: callable) -> callable:
             offset += 100
 
         geojson = {
-            "type": "FeatureCollection",
-            "numberOfRequests": request_count,
-            "numberReturned": len(features),
-            "timeStamp": datetime.now().isoformat(),
-            "collection": kwargs.get('collection'),
-            "features": features
+            'type': 'FeatureCollection',
+            'numberOfRequests': request_count,
+            'numberReturned': len(features),
+            'timeStamp': datetime.now().isoformat(),
+            'collection': kwargs.get('collection'),
+            'features': features
         }
         return geojson
 
@@ -438,10 +472,10 @@ def multigeometry_search_extension(func: callable) -> callable:
             full_geom = from_wkt(wkt) if isinstance(wkt, str) else wkt
         except GEOSException:
             return {
-                "code": 400,
-                "description": "The input geometry is not valid. Please ensure you have the correct formatting for your input geometry type.",
-                "help": "http://libgeos.org/specifications/wkt/",
-                "errorSource": "Catalyst Wrapper"
+                'code': 400,
+                'description': 'The input geometry is not valid. Please ensure you have the correct formatting for your input geometry type.',
+                'help': 'http://libgeos.org/specifications/wkt/',
+                'errorSource': 'Catalyst Wrapper'
             }
 
         search_areas = []
@@ -459,7 +493,7 @@ def multigeometry_search_extension(func: callable) -> callable:
 
         if hierarchical_output:
             response = {
-                "searchAreas": search_areas
+                'searchAreas': search_areas
             }
             return response
 
