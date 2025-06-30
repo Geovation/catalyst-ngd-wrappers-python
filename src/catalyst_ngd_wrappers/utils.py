@@ -84,7 +84,7 @@ def multilevel_explode(shape: BaseGeometry) -> list[Polygon | LineString | Point
     return result_list
 
 
-def handle_decode_error(error: JSONDecodeError, status_code: int) -> dict:
+def handle_decode_error(error: JSONDecodeError, status_code: int = 500) -> dict:
     '''Handles JSONDecodeError exceptions by extracting the error message and returning a structured error response.'''
     error_string = str(error)
     if error_string.startswith('Expecting value'):

@@ -4,7 +4,6 @@ from json import JSONDecodeError
 from datetime import datetime, timedelta
 
 import requests as r
-from requests import Response
 
 from shapely import from_wkt
 from shapely.errors import GEOSException
@@ -22,10 +21,18 @@ def get_latest_collection_versions(flag_recent_updates: bool = True, recent_upda
     This can be used to ensure that software is always using the latest version of a feature collection.
     More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
     '''
-
-    response = r.get(
-        'https://api.os.uk/features/ngd/ofa/v1/collections/', timeout=UNIVERSAL_TIMEOUT)
-    collections_data = response.json().get('collections')
+    retries = 3
+    
+    for attempt in range(retries):
+        try:
+            response = r.get(
+                'https://api.os.uk/features/ngd/ofa/v1/collections/', timeout=UNIVERSAL_TIMEOUT)
+            response.raise_for_status()
+            collections_data = response.json().get('collections')
+            break
+        except (r.RequestException, ValueError) as e:
+            if attempt < retries - 1:
+                raise e
     collections_list = [collection['id'] for collection in collections_data]
 
     collections_dict = {}
@@ -152,7 +159,7 @@ def oauth2_authentication(func: callable) -> callable:
         headers = headers.copy() if headers else {}
         query_params = query_params.copy() if query_params else {}
 
-        def run_request(headers_: dict) -> Response:
+        def run_request(headers_: dict) -> dict:
             '''Runs the request with the given headers and returns the response.'''
             try:
                 json_response = func(
@@ -161,10 +168,7 @@ def oauth2_authentication(func: callable) -> callable:
                     **kwargs
                 )
             except JSONDecodeError as e:
-                return handle_decode_error(
-                    error = e,
-                    status_code = response.status_code
-                )
+                return handle_decode_error(error = e)
             return json_response
 
         if headers.get('key') or query_params.get('key'):
