@@ -28,8 +28,8 @@ def get_latest_collection_versions(recent_update_days: int = None, **kwargs) -> 
         try:
             response = r.get(
                 'https://api.os.uk/features/ngd/ofa/v1/collections/',
-                timeout=UNIVERSAL_TIMEOUT,
-                params=kwargs
+                timeout = UNIVERSAL_TIMEOUT,
+                params = kwargs or {}
             )
             response.raise_for_status()
             collections_data = response.json().get('collections')
