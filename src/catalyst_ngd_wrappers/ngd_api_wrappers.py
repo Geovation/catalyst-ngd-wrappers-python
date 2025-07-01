@@ -14,7 +14,7 @@ from .telemetry import prepare_telemetry_custom_dimensions
 
 UNIVERSAL_TIMEOUT: int = 20
 
-def get_latest_collection_versions(flag_recent_updates: bool = True, recent_update_days: int = 31) -> dict:
+def get_latest_collection_versions(recent_update_days: int = 31) -> dict:
     '''
     Returns the latest collection versions of each NGD collection.
     Feature collections follow the following naming convention: theme-collection-featuretype-version (eg. bld-fts-buildingline-2)
@@ -32,14 +32,9 @@ def get_latest_collection_versions(flag_recent_updates: bool = True, recent_upda
             collections_data = response.json().get('collections')
             break
         except (r.RequestException, ValueError) as e:
-            return response.json() # Temporary Troubleshoot
             if attempt < retries - 1:
                 raise e
             time.sleep(2 ** attempt)  # Exponential backoff
-        except Exception as e: # Temporary troubleshoot
-            error = response.json()
-            error.update({'error': str(e)})
-            return error
 
     collections_list = [collection['id'] for collection in collections_data]
     collections_dict = {}
@@ -57,7 +52,7 @@ def get_latest_collection_versions(flag_recent_updates: bool = True, recent_upda
         latest_version = max(versions)
         output_lookup[basename] = f'{basename}-{latest_version}'
 
-    if not flag_recent_updates:
+    if not recent_update_days:
         return output_lookup
 
     recent_update_cutoff = datetime.now() - timedelta(days=recent_update_days)
@@ -88,8 +83,7 @@ def get_specific_latest_collections(collection: list[str], **kwargs) -> str:
     Output will supply a dictionary completing the full name of the feature collections by appending the latest version number (eg. bld-fts-buildingline-2)
     More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
     '''
-    latest_collections = get_latest_collection_versions(
-        flag_recent_updates=False, **kwargs)
+    latest_collections = get_latest_collection_versions(**kwargs)
     try:
         specific_latest_collections = {
             col: latest_collections[col] for col in collection}
@@ -274,9 +268,9 @@ def ngd_items_request(
             [collection]).get(collection)
 
     query_params = prepare_parameters(
-        query_params=query_params,
-        wkt=wkt,
-        filter_params=filter_params,
+        query_params = query_params,
+        wkt = wkt,
+        filter_params = filter_params,
     )
 
     url = f'https://api.os.uk/features/ngd/ofa/v1/collections/{collection}/items/'
@@ -284,9 +278,9 @@ def ngd_items_request(
     request_func = base_request if authenticate else oauth2_authentication(base_request)
 
     json_response = request_func(
-        url=url,
-        params=query_params,
-        headers=headers,
+        url = url,
+        params = query_params,
+        headers = headers,
         **kwargs
     )
 
@@ -316,10 +310,10 @@ def ngd_items_request(
 
     if log_request_details:
         json_response['telemetryData'] = prepare_telemetry_custom_dimensions(
-            json_response=json_response,
-            url=url,
-            collection=collection,
-            query_params=query_params
+            json_response = json_response,
+            url = url,
+            collection = collection,
+            query_params = query_params
         )
 
     return json_response
