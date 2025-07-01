@@ -14,7 +14,7 @@ from .telemetry import prepare_telemetry_custom_dimensions
 
 UNIVERSAL_TIMEOUT: int = 20
 
-def get_latest_collection_versions(recent_update_days: int = 31, **kwargs) -> dict:
+def get_latest_collection_versions(recent_update_days: int = None, **kwargs) -> dict:
     '''
     Returns the latest collection versions of each NGD collection.
     Feature collections follow the following naming convention: theme-collection-featuretype-version (eg. bld-fts-buildingline-2)
