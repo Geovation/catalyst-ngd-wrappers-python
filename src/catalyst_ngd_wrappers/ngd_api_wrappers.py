@@ -14,11 +14,15 @@ from .telemetry import prepare_telemetry_custom_dimensions
 
 UNIVERSAL_TIMEOUT: int = 20
 
-def extract_latest_versions(
+def flag_recent_versions(
         output_lookup: dict[str:str],
         collections_data: list[dict],
         recent_update_days: int = 31
     ) -> dict:
+    '''
+    Takes a set of base NGD collections names matched to their latest version (output_lookup), and flags which of these collections have been updated in the last X days.
+    It depends on the raw collections data from the OS NGD API, which is passed in as collections_data.
+    '''
 
     recent_update_cutoff = datetime.now() - timedelta(days=recent_update_days)
     latest_versions_data = [
@@ -85,7 +89,7 @@ def get_latest_collection_versions(recent_update_days: int = None, **kwargs) -> 
     if not recent_update_days:
         return output_lookup
 
-    full_output = extract_latest_versions(
+    full_output = flag_recent_versions(
         output_lookup = output_lookup,
         collections_data = collections_data,
         recent_update_days = recent_update_days
