@@ -13,6 +13,7 @@ from .utils import prepare_parameters, handle_decode_error, multilevel_explode
 from .telemetry import prepare_telemetry_custom_dimensions
 
 UNIVERSAL_TIMEOUT: int = 20
+RETRIES: int = 3
 
 def flag_recent_versions(
         output_lookup: dict[str:str],
@@ -53,9 +54,8 @@ def get_latest_collection_versions(recent_update_days: int = None, **kwargs) -> 
     This can be used to ensure that software is always using the latest version of a feature collection.
     More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
     '''
-    retries = 3
     
-    for attempt in range(retries):
+    for attempt in range(RETRIES):
         try:
             response = r.get(
                 'https://api.os.uk/features/ngd/ofa/v1/collections/',
@@ -66,7 +66,7 @@ def get_latest_collection_versions(recent_update_days: int = None, **kwargs) -> 
             collections_data = response.json().get('collections')
             break
         except (r.RequestException, ValueError) as e:
-            if attempt < retries - 1:
+            if attempt < RETRIES - 1:
                 raise e
             time.sleep(2 ** attempt)  # Exponential backoff
 
