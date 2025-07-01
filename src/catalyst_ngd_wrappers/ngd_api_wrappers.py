@@ -14,7 +14,7 @@ from .telemetry import prepare_telemetry_custom_dimensions
 
 UNIVERSAL_TIMEOUT: int = 20
 
-def get_latest_collection_versions(recent_update_days: int = 31) -> dict:
+def get_latest_collection_versions(recent_update_days: int = 31, **kwargs) -> dict:
     '''
     Returns the latest collection versions of each NGD collection.
     Feature collections follow the following naming convention: theme-collection-featuretype-version (eg. bld-fts-buildingline-2)
@@ -27,7 +27,10 @@ def get_latest_collection_versions(recent_update_days: int = 31) -> dict:
     for attempt in range(retries):
         try:
             response = r.get(
-                'https://api.os.uk/features/ngd/ofa/v1/collections/', timeout=UNIVERSAL_TIMEOUT)
+                'https://api.os.uk/features/ngd/ofa/v1/collections/',
+                timeout=UNIVERSAL_TIMEOUT,
+                params=kwargs
+            )
             response.raise_for_status()
             collections_data = response.json().get('collections')
             break
