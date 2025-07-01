@@ -14,6 +14,33 @@ from .telemetry import prepare_telemetry_custom_dimensions
 
 UNIVERSAL_TIMEOUT: int = 20
 
+def extract_latest_versions(
+        output_lookup: dict[str:str],
+        collections_data: list[dict],
+        recent_update_days: int = 31
+    ) -> dict:
+
+    recent_update_cutoff = datetime.now() - timedelta(days=recent_update_days)
+    latest_versions_data = [
+        c for c in collections_data
+        if c['id'] in output_lookup.values()
+    ]
+    recent_collections = []
+
+    for collection_data in latest_versions_data:
+        version_startdate = collection_data['extent']['temporal']['interval'][0][0]
+        time_obj = datetime.strptime(version_startdate, r'%Y-%m-%dT%H:%M:%SZ')
+        if time_obj > recent_update_cutoff:
+            collection = collection_data['id']
+            recent_collections.append(collection)
+
+    full_output = {
+        'collection-lookup': output_lookup,
+        'recent-update-threshold-days': recent_update_days,
+        'recent-collection-updates': recent_collections
+    }
+    return full_output
+
 def get_latest_collection_versions(recent_update_days: int = None, **kwargs) -> dict:
     '''
     Returns the latest collection versions of each NGD collection.
@@ -58,24 +85,11 @@ def get_latest_collection_versions(recent_update_days: int = None, **kwargs) -> 
     if not recent_update_days:
         return output_lookup
 
-    recent_update_cutoff = datetime.now() - timedelta(days=recent_update_days)
-    latest_versions_data = [
-        c for c in collections_data if c['id'] in output_lookup.values()]
-    recent_collections = []
-
-    for collection_data in latest_versions_data:
-        version_startdate = collection_data['extent']['temporal']['interval'][0][0]
-        time_obj = datetime.strptime(version_startdate, r'%Y-%m-%dT%H:%M:%SZ')
-        if time_obj > recent_update_cutoff:
-            collection = collection_data['id']
-            recent_collections.append(collection)
-
-    full_output = {
-        'collection-lookup': output_lookup,
-        'recent-update-threshold-days': recent_update_days,
-        'recent-collection-updates': recent_collections
-    }
-
+    full_output = extract_latest_versions(
+        output_lookup = output_lookup,
+        collections_data = collections_data,
+        recent_update_days = recent_update_days
+    )
     return full_output
 
 
