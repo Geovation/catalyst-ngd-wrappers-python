@@ -54,6 +54,12 @@ def get_latest_collection_versions(recent_update_days: int = None, **kwargs) -> 
     This can be used to ensure that software is always using the latest version of a feature collection.
     More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
     '''
+    if kwargs:
+        return {
+            'code': 400,
+            'description': 'Only recent-update-days can be passed as a query parameter for this endpoint.',
+            'errorSource': 'Catalyst Wrapper'
+        }
     
     for attempt in range(RETRIES):
         try:
