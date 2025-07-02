@@ -13,8 +13,40 @@ from .utils import prepare_parameters, handle_decode_error, multilevel_explode
 from .telemetry import prepare_telemetry_custom_dimensions
 
 UNIVERSAL_TIMEOUT: int = 20
+RETRIES: int = 3
 
-def get_latest_collection_versions(recent_update_days: int = None, **kwargs) -> dict:
+def flag_recent_versions(
+        output_lookup: dict[str:str],
+        collections_data: list[dict],
+        recent_update_days: int = 31
+    ) -> dict:
+    '''
+    Takes a set of base NGD collections names matched to their latest version (output_lookup), and flags which of these collections have been updated in the last X days.
+    It depends on the raw collections data from the OS NGD API, which is passed in as collections_data.
+    '''
+
+    recent_update_cutoff = datetime.now() - timedelta(days=recent_update_days)
+    latest_versions_data = [
+        c for c in collections_data
+        if c['id'] in output_lookup.values()
+    ]
+    recent_collections = []
+
+    for collection_data in latest_versions_data:
+        version_startdate = collection_data['extent']['temporal']['interval'][0][0]
+        time_obj = datetime.strptime(version_startdate, r'%Y-%m-%dT%H:%M:%SZ')
+        if time_obj > recent_update_cutoff:
+            collection = collection_data['id']
+            recent_collections.append(collection)
+
+    full_output = {
+        'collection-lookup': output_lookup,
+        'recent-update-threshold-days': recent_update_days,
+        'recent-collection-updates': recent_collections
+    }
+    return full_output
+
+def get_latest_collection_versions(recent_update_days: int = None) -> dict:
     '''
     Returns the latest collection versions of each NGD collection.
     Feature collections follow the following naming convention: theme-collection-featuretype-version (eg. bld-fts-buildingline-2)
@@ -22,20 +54,18 @@ def get_latest_collection_versions(recent_update_days: int = None, **kwargs) -> 
     This can be used to ensure that software is always using the latest version of a feature collection.
     More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
     '''
-    retries = 3
     
-    for attempt in range(retries):
+    for attempt in range(RETRIES):
         try:
             response = r.get(
                 'https://api.os.uk/features/ngd/ofa/v1/collections/',
-                timeout = UNIVERSAL_TIMEOUT,
-                params = kwargs or {}
+                timeout = UNIVERSAL_TIMEOUT
             )
             response.raise_for_status()
             collections_data = response.json().get('collections')
             break
         except (r.RequestException, ValueError) as e:
-            if attempt < retries - 1:
+            if attempt < RETRIES - 1:
                 raise e
             time.sleep(2 ** attempt)  # Exponential backoff
 
@@ -58,24 +88,11 @@ def get_latest_collection_versions(recent_update_days: int = None, **kwargs) -> 
     if not recent_update_days:
         return output_lookup
 
-    recent_update_cutoff = datetime.now() - timedelta(days=recent_update_days)
-    latest_versions_data = [
-        c for c in collections_data if c['id'] in output_lookup.values()]
-    recent_collections = []
-
-    for collection_data in latest_versions_data:
-        version_startdate = collection_data['extent']['temporal']['interval'][0][0]
-        time_obj = datetime.strptime(version_startdate, r'%Y-%m-%dT%H:%M:%SZ')
-        if time_obj > recent_update_cutoff:
-            collection = collection_data['id']
-            recent_collections.append(collection)
-
-    full_output = {
-        'collection-lookup': output_lookup,
-        'recent-update-threshold-days': recent_update_days,
-        'recent-collection-updates': recent_collections
-    }
-
+    full_output = flag_recent_versions(
+        output_lookup = output_lookup,
+        collections_data = collections_data,
+        recent_update_days = recent_update_days
+    )
     return full_output
 
 
