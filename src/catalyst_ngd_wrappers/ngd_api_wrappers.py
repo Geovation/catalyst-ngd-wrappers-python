@@ -46,7 +46,7 @@ def flag_recent_versions(
     }
     return full_output
 
-def get_latest_collection_versions(recent_update_days: int = None, **kwargs) -> dict:
+def get_latest_collection_versions(recent_update_days: int = None) -> dict:
     '''
     Returns the latest collection versions of each NGD collection.
     Feature collections follow the following naming convention: theme-collection-featuretype-version (eg. bld-fts-buildingline-2)
@@ -54,19 +54,12 @@ def get_latest_collection_versions(recent_update_days: int = None, **kwargs) -> 
     This can be used to ensure that software is always using the latest version of a feature collection.
     More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
     '''
-    if kwargs:
-        return {
-            'code': 400,
-            'description': 'Only recent-update-days can be passed as a query parameter for this endpoint.',
-            'errorSource': 'Catalyst Wrapper'
-        }
     
     for attempt in range(RETRIES):
         try:
             response = r.get(
                 'https://api.os.uk/features/ngd/ofa/v1/collections/',
-                timeout = UNIVERSAL_TIMEOUT,
-                params = kwargs or {}
+                timeout = UNIVERSAL_TIMEOUT
             )
             response.raise_for_status()
             collections_data = response.json().get('collections')
