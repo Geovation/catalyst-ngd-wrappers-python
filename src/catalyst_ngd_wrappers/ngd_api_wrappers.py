@@ -103,6 +103,12 @@ def get_specific_latest_collections(collection: list[str], **kwargs) -> str:
     Output will supply a dictionary completing the full name of the feature collections by appending the latest version number (eg. bld-fts-buildingline-2)
     More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
     '''
+    if kwargs:
+        return {
+            'code': 400,
+            'description': 'This endpoint not accept any query parameters.',
+            'errorSource': 'Catalyst Wrapper'
+        }
     latest_collections = get_latest_collection_versions(**kwargs)
     try:
         specific_latest_collections = {
