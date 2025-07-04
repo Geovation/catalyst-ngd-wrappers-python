@@ -109,7 +109,7 @@ def get_specific_latest_collections(collection: list[str], **kwargs) -> str:
             'description': 'This endpoint not accept any query parameters.',
             'errorSource': 'Catalyst Wrapper'
         }
-    latest_collections = get_latest_collection_versions(**kwargs)
+    latest_collections = get_latest_collection_versions()
     try:
         specific_latest_collections = {
             col: latest_collections[col] for col in collection}
