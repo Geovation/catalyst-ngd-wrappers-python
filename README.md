@@ -1,41 +1,45 @@
-# CatalyST-NGD-Wrappers
+# NGD Wrappers python 
 
-CatalyST_NGD_Wrappers is a package which extends and enhances the flexibility and functionality of Ordnance Survey NGD API - Features.
+This is a python package which extends and enhances the flexibility and functionality of Ordnance Survey NGD API - Features.
 
 ## Features
 
 1. Wrapping core [OS NGD API - Features](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features) functionality
-    - Calls to the [Features](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/features) and [Collections](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/collections) endpoints can be made through python functions.
+   - Calls to the [Features](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/features) and [Collections](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/collections) endpoints can be made through python functions.
 2. Limit Extension
-     - The default upper limit for the number of features returned can be extended above the default of 100 through automatic pagination.
+   - The default upper limit for the number of features returned can be extended above the default of 100 through automatic pagination.
 3. Geometry Extension
-    - Multi-geometry search areas can be provided as spatial filters, including Geometry Collections.
-    - Each search area is searched in turn.
-    - The base NGD API is low-performing when multigeometries are searched and the component geometries are a long way apart. The wrapper resolves this issue.
+   - Multi-geometry search areas can be provided as spatial filters, including Geometry Collections.
+   - Each search area is searched in turn.
+   - The base NGD API is low-performing when multigeometries are searched and the component geometries are a long way apart. The wrapper resolves this issue.
 4. Collection Extension
-    - Multiple collections can be searched at once.
-    - This is useful when data relevant to a use-case spans multiple collections.
+   - Multiple collections can be searched at once.
+   - This is useful when data relevant to a use-case spans multiple collections.
 5. Latest Collections
-    - Retrieve a simple list of the latest schema versions available for each NGD collection, for for a specified set.
-    - The latest schema version for a given collection can be automatically used for a features request.
+   - Retrieve a simple list of the latest schema versions available for each NGD collection, for for a specified set.
+   - The latest schema version for a given collection can be automatically used for a features request.
 6. CRS Specification
-    - Short/simple versions of CRS codes can be used (eg. 27700, 4326, CRS84) instead of the full URIs.
-    - This applies for all crs parameters:
-        - crs
-        - bbox-crs
-        - filter-crs
+   - Short/simple versions of CRS codes can be used (eg. 27700, 4326, CRS84) instead of the full URIs.
+   - This applies for all crs parameters:
+     - crs
+     - bbox-crs
+     - filter-crs
 7. Filter Parameters
-    - Rather than writing full CQL filters, filter parameters for equality (=) can be supplied as a dictionary.
-    - Rather than writing a full CQL spatial filter, WKT geometries can be supplied as a separate parameter.
+   - Rather than writing full CQL filters, filter parameters for equality (=) can be supplied as a dictionary.
+   - Rather than writing a full CQL spatial filter, WKT geometries can be supplied as a separate parameter.
 8. Automatic Oauth2 authentication
-    - When CLIENT_ID (project api key) and CLIENT_SECRET (project api secret) are provided as environment variables, authentication is processed automatically via 5-minute access tokens.
-    - Once these environment variables are supplied, the user does not need to do any further action to authenticate their requests.
+   - When CLIENT_ID (project api key) and CLIENT_SECRET (project api secret) are provided as environment variables, authentication is processed automatically via 5-minute access tokens.
+   - Once these environment variables are supplied, the user does not need to do any further action to authenticate their requests.
 
-## Installation
+## Install
 
+The library can be installed using `pip`. It is not currently published to a repository such as PyPI but it can be installed by direct link to the latest version tag on GitHub.
+
+```console
+$ pip install git+https://github.com/Geovation/catalyst-ngd-wrappers-python@0.1.0
 ```
-pip install git+https://github.com/Geovation/catalyst-ngd-wrappers-python
-```
+
+Replace the version tag with the latest version. To upgrade, reinstall with the latest tag (or whichever tag you choose).
 
 ## Usage
 
