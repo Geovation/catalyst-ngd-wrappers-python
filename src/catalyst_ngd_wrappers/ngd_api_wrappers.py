@@ -164,7 +164,7 @@ def oauth2_authentication(func: callable) -> callable:
 
     def wrapper(
         headers: dict = None,
-        query_params: dict = None,
+        params: dict = None,
         **kwargs
     ) -> dict:
         '''Runs OS NGD API - Features request, handling authentication via environment variables.
@@ -174,27 +174,27 @@ def oauth2_authentication(func: callable) -> callable:
         The url itself is not explicitly supplied, but expected as kwargs.
         Parameters:
             headers (dict, optional) - Headers to pass to the query. These can include bearer-token authentication.
-            query_params (dict, optional) - Parameters to pass to the query as query parameters, supplied in a dictionary.
+            params (dict, optional) - Parameters to pass to the query as query parameters, supplied in a dictionary.
             **kwargs: other generic parameters to be passed to the requests.get()
         Returns the response from the request, or a 401 error if authentication fails.
         '''
 
         headers = headers.copy() if headers else {}
-        query_params = query_params.copy() if query_params else {}
+        params = params.copy() if params else {}
 
         def run_request(headers_: dict) -> dict:
             '''Runs the request with the given headers and returns the response.'''
             try:
                 json_response = func(
                     headers=headers_,
-                    params=query_params,
+                    params=params,
                     **kwargs
                 )
             except JSONDecodeError as e:
                 return handle_decode_error(error = e)
             return json_response
 
-        if headers.get('key') or query_params.get('key'):
+        if headers.get('key') or params.get('key'):
             response = run_request(headers)
             return response.json()
 
@@ -232,7 +232,7 @@ def oauth2_authentication(func: callable) -> callable:
     The url itself is not explicitly supplied, but expected as kwargs.
     Parameters:
         headers (dict, optional) - Headers to pass to the query. These can include bearer-token authentication.
-        query_params (dict, optional) - Parameters to pass to the query as query parameters, supplied in a dictionary.
+        params (dict, optional) - Parameters to pass to the query as query parameters, supplied in a dictionary.
         **kwargs: other generic parameters to be passed to the requests.get()
     Returns the response from the request, or a 401 error if authentication fails.
 
@@ -246,7 +246,7 @@ def oauth2_authentication(func: callable) -> callable:
 
 def ngd_items_request(
     collection: str,
-    query_params: dict = None,
+    params: dict = None,
     headers: dict = None,
     use_latest_collection: bool = False,
     authenticate: bool = True,
@@ -261,9 +261,9 @@ def ngd_items_request(
         - https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features
     Parameters:
         collection (str) - the feature collection to call from. Feature collection names and details can be found at https://api.os.uk/features/ngd/ofa/v1/collections/
-        query_params (dict, optional) - parameters to pass to the query as query parameters, supplied in a dictionary. Supported parameters are: bbox, bbox-crs, crs, datetime, filter, filter-crs, filter-lang, limit, offset
-        filter_params (dict, optional) - OS NGD attribute filters to pass to the query within the 'filter' query_param. The can be used instead of or in addition to manually setting the filter in query_params.
-            The key-value pairs will appended using the EQUAL TO [ = ] comparator. Any other CQL Operator comparisons must be set manually in query_params.
+        params (dict, optional) - parameters to pass to the query as query parameters, supplied in a dictionary. Supported parameters are: bbox, bbox-crs, crs, datetime, filter, filter-crs, filter-lang, limit, offset
+        filter_params (dict, optional) - OS NGD attribute filters to pass to the query within the 'filter' query_param. The can be used instead of or in addition to manually setting the filter in params.
+            The key-value pairs will appended using the EQUAL TO [ = ] comparator. Any other CQL Operator comparisons must be set manually in params.
             Queryable attributes can be found in OS NGD codelists documentation https://docs.os.uk/osngd/code-lists/code-lists-overview, or by inserting the relevant collectionId into the https://api.os.uk/features/ngd/ofa/v1/collections/{{collectionId}}/queryables endpoint.
         wkt (string or shapely geometry object) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a string or as a Shapely geometry object.
             The function automatically composes the full INTERSECTS filter and adds it to the 'filter' query parameter.
@@ -277,7 +277,7 @@ def ngd_items_request(
     Returns the features as a geojson, as per the OS NGD API.
     '''
 
-    query_params = query_params.copy() if query_params else {}
+    params = params.copy() if params else {}
     headers = headers.copy() if headers else {}
 
     kwargs.pop('hierarchical_output', None)
@@ -288,8 +288,8 @@ def ngd_items_request(
         collection = get_specific_latest_collections(
             [collection]).get(collection)
 
-    query_params = prepare_parameters(
-        query_params = query_params,
+    params = prepare_parameters(
+        query_params = params,
         wkt = wkt,
         filter_params = filter_params,
     )
@@ -300,7 +300,7 @@ def ngd_items_request(
 
     json_response = request_func(
         url = url,
-        params = query_params,
+        params = params,
         headers = headers,
         **kwargs
     )
@@ -334,7 +334,7 @@ def ngd_items_request(
             json_response = json_response,
             url = url,
             collection = collection,
-            query_params = query_params
+            query_params = params
         )
 
     return json_response
@@ -348,13 +348,13 @@ def limit_extension(func: callable) -> callable:
     def wrapper(
         request_limit: int = 50,
         limit: int = None,
-        query_params: dict = None,
+        params: dict = None,
         **kwargs
     ) -> dict:
 
-        query_params = query_params.copy() if query_params else {}
+        params = params.copy() if params else {}
 
-        if 'offset' in query_params:
+        if 'offset' in params:
             return {
                 'code': 400,
                 'description': "'offset' is not a valid attribute for functions using this Catalyst wrapper.",
@@ -378,11 +378,11 @@ def limit_extension(func: callable) -> callable:
         while (request_count != request_limit) and (not (limit) or offset < limit):
 
             if request_count == batch_count:
-                query_params['limit'] = final_batchsize
-            query_params['offset'] = offset
+                params['limit'] = final_batchsize
+            params['offset'] = offset
 
             json_response = func(
-                query_params=query_params,
+                params=params,
                 **kwargs
             )
             json_response.pop('numberOfRequests', None)
@@ -415,7 +415,7 @@ def limit_extension(func: callable) -> callable:
     - collection: The name of the collection to be queried.
     - request_limit: The maximum number of calls to be made to {funcname}. Default is 50.
     - limit: The maximum number of features to be returned. Default is None.
-    - query_params: A dictionary of query parameters to be passed to the function. Default is an empty dictionary.
+    - params: A dictionary of query parameters to be passed to the function. Default is an empty dictionary.
     To prevent indefinite requests and high costs, at least one of limit or request_limit must be provided, although there is no limit to the upper value these can be.
     It will make multiple requests to the function to compile all features from the specified collection, returning a dictionary with the features and metadata.
 
