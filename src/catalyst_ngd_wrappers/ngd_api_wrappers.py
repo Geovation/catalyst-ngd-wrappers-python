@@ -286,7 +286,7 @@ def ngd_items_request(
 
     if use_latest_collection:
         collection = get_specific_latest_collections(
-            [collection]).get(collection)
+            [collection]).get(collection, collection)
 
     params = prepare_parameters(
         query_params = params,
