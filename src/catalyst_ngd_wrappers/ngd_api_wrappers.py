@@ -202,7 +202,7 @@ def oauth2_authentication(func: callable) -> callable:
         if access_token:
             headers['Authorization'] = f'Bearer {access_token}'
             response = run_request(headers)
-            if response.get('status_code', 0) != 401:
+            if response.get('code', 0) != 401:
                 return response
 
         client_id = os.environ.get('CLIENT_ID')
