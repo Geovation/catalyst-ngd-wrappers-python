@@ -45,7 +45,7 @@ Replace the version tag with the latest version. To upgrade, reinstall with the 
 
 ### Latest Collections Wrapper
 ```python
-import catalyst_ngd_wrappers
+from catalyst_ngd_wrappers.ngd_api_wrappers import get_latest_collection_versions
 
 # Returns a mapper between base collections names and their latest versions
 latest_collections_data = get_latest_collection_versions()
@@ -56,7 +56,7 @@ latest_collections_with_updates_flagged = get_latest_collection_versions(recent_
 
 ### Features Wraper
 ```python
-import catalyst_ngd_wrappers
+from catalyst_ngd_wrappers.ngd_api_wrappers import items_limit_geom_col
 
 collection = ['bld-fts-building', 'trn-ntwk-road', 'wtr-fts-water']
 
