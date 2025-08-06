@@ -36,17 +36,30 @@ This is a python package which extends and enhances the flexibility and function
 The library can be installed using `pip`. It is not currently published to a repository such as PyPI but it can be installed by direct link to the latest version tag on GitHub.
 
 ```console
-$ pip install git+https://github.com/Geovation/catalyst-ngd-wrappers-python@0.1.0
+$ pip install git+https://github.com/Geovation/catalyst-ngd-wrappers-python@0.2.0
 ```
 
 Replace the version tag with the latest version. To upgrade, reinstall with the latest tag (or whichever tag you choose).
 
 ## Usage
 
+### Latest Collections Wrapper
+```python
+import catalyst_ngd_wrappers
+
+# Returns a mapper between base collections names and their latest versions
+latest_collections_data = get_latest_collection_versions()
+
+# ...with updates in the last month flagged
+latest_collections_with_updates_flagged = get_latest_collection_versions(recent_update_days = 31)
+```
+
+### Features Wraper
 ```python
 import catalyst_ngd_wrappers
 
 collection = ['bld-fts-building', 'trn-ntwk-road', 'wtr-fts-water']
+
 wkt = 'GEOMETRYCOLLECTION (POLYGON ((400000 400000, 400090 400050, 400050 400000, 400000 40050, 400000 400000)), LINESTRING(399990 399990, 399000 399000))'
 universal_crs = 27700
 limit = 300
