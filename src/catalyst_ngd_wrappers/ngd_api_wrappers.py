@@ -112,7 +112,8 @@ def get_specific_latest_collections(collection: list[str], **kwargs) -> str:
         return {
             'code': 404,
             'description': f'Collection {e} is not a supported Collection base name. The name must not include a version suffix. Please refer to the documentation for a list of supported Collections.',
-            'help': 'https://api.os.uk/features/ngd/ofa/v1/collections'
+            'help': 'https://api.os.uk/features/ngd/ofa/v1/collections',
+            'errorSource': 'Catalyst Wrapper'
         }
 
     return specific_latest_collections
