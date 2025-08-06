@@ -1,7 +1,6 @@
 from marshmallow.exceptions import ValidationError
 
-from catalyst_ngd_wrappers.ngd_api_wrappers import \
-    get_latest_collection_versions, get_specific_latest_collections
+from ngd_api_wrappers import get_latest_collection_versions, get_specific_latest_collections
 
 from deployment_schemas import CollectionsSchema, ColSchema
 
