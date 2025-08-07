@@ -1,8 +1,8 @@
 from marshmallow.exceptions import ValidationError
 
-from ngd_api_wrappers import get_latest_collection_versions, get_specific_latest_collections
+from .ngd_api_wrappers import get_latest_collection_versions, get_specific_latest_collections
 
-from deployment_schemas import CollectionsSchema, ColSchema
+from .deployment_schemas import CollectionsSchema, ColSchema
 
 class BaseSerialisedRequest:
     '''
