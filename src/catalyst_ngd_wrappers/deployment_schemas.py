@@ -10,7 +10,6 @@ Schemas for the API endpoints.
 from marshmallow import Schema, INCLUDE
 from marshmallow.fields import Integer, String, Boolean, List
 
-
 class BaseSchema(Schema):
     '''Abstract schema for logs queries'''
     log_request_details = Boolean(data_key='log-request-details', required=False)

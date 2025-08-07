@@ -1,3 +1,16 @@
+'''Central module
+Wrappers for the OS NGD API - Features, allowing for simplified access to the API endpoints.
+It includes:
+    - Handling of authentication via OAuth2,
+    - Support for multiple collections,
+    - Automatic pagination and limit handling,
+    - Support for complex and quicker spatial query handling using WKT geometries.
+    - Tools for automatically constructing CQL filters from simple key-value pairs.
+    - Support for hierarchical or flat output formats.
+    - Tools for retrieving latest collection versions
+    - Automatically use of latest collection verision when retrieving features.
+'''
+
 import re
 import os
 from json import JSONDecodeError
@@ -15,11 +28,12 @@ from .telemetry import prepare_telemetry_custom_dimensions
 UNIVERSAL_TIMEOUT: int = 20
 RETRIES: int = 3
 
+
 def flag_recent_versions(
-        output_lookup: dict[str:str],
-        collections_data: list[dict],
-        recent_update_days: int = 31
-    ) -> dict:
+    output_lookup: dict[str:str],
+    collections_data: list[dict],
+    recent_update_days: int = 31
+) -> dict:
     '''
     Takes a set of base NGD collections names matched to their latest version (output_lookup), and flags which of these collections have been updated in the last X days.
     It depends on the raw collections data from the OS NGD API, which is passed in as collections_data.
@@ -46,6 +60,7 @@ def flag_recent_versions(
     }
     return full_output
 
+
 def get_latest_collection_versions(recent_update_days: int = None, **kwargs) -> dict:
     '''
     Returns the latest collection versions of each NGD collection.
@@ -54,12 +69,12 @@ def get_latest_collection_versions(recent_update_days: int = None, **kwargs) -> 
     This can be used to ensure that software is always using the latest version of a feature collection.
     More details on feature collection naming can be found at https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available
     '''
-    
+
     for attempt in range(RETRIES):
         try:
             response = r.get(
                 'https://api.os.uk/features/ngd/ofa/v1/collections/',
-                timeout = UNIVERSAL_TIMEOUT,
+                timeout=UNIVERSAL_TIMEOUT,
                 **kwargs
             )
             response.raise_for_status()
@@ -90,9 +105,9 @@ def get_latest_collection_versions(recent_update_days: int = None, **kwargs) -> 
         return output_lookup
 
     full_output = flag_recent_versions(
-        output_lookup = output_lookup,
-        collections_data = collections_data,
-        recent_update_days = recent_update_days
+        output_lookup=output_lookup,
+        collections_data=collections_data,
+        recent_update_days=recent_update_days
     )
     return full_output
 
@@ -192,7 +207,7 @@ def oauth2_authentication(func: callable) -> callable:
                     **kwargs
                 )
             except JSONDecodeError as e:
-                return handle_decode_error(error = e)
+                return handle_decode_error(error=e)
             return json_response
 
         if headers.get('key') or params.get('key'):
@@ -221,7 +236,7 @@ def oauth2_authentication(func: callable) -> callable:
         os.environ['ACCESS_TOKEN'] = access_token
         headers['Authorization'] = f'Bearer {access_token}'
         return run_request(headers)
-    
+
     wrapper.__name__ = func.__name__ + '+oauth2_authentication'
     funcname = func.__name__
     wrapper.__doc__ = f'''
@@ -240,7 +255,7 @@ def oauth2_authentication(func: callable) -> callable:
     Docs for {funcname}:
         {func.__doc__}
     '''
-    
+
     return wrapper
 
 
@@ -289,19 +304,20 @@ def ngd_items_request(
             [collection]).get(collection, collection)
 
     params = prepare_parameters(
-        query_params = params,
-        wkt = wkt,
-        filter_params = filter_params,
+        query_params=params,
+        wkt=wkt,
+        filter_params=filter_params,
     )
 
     url = f'https://api.os.uk/features/ngd/ofa/v1/collections/{collection}/items/'
 
-    request_func = oauth2_authentication(base_request) if authenticate else base_request
+    request_func = oauth2_authentication(
+        base_request) if authenticate else base_request
 
     json_response = request_func(
-        url = url,
-        params = params,
-        headers = headers,
+        url=url,
+        params=params,
+        headers=headers,
         **kwargs
     )
 
@@ -331,10 +347,10 @@ def ngd_items_request(
 
     if log_request_details:
         json_response['telemetryData'] = prepare_telemetry_custom_dimensions(
-            json_response = json_response,
-            url = url,
-            collection = collection,
-            query_params = params
+            json_response=json_response,
+            url=url,
+            collection=collection,
+            query_params=params
         )
 
     return json_response
@@ -621,6 +637,7 @@ def multiple_collections_extension(func: callable) -> dict:
     return wrapper
 
 # All possible ways of combining different wrappers in combos with OAuth2
+
 
 items = ngd_items_request
 
