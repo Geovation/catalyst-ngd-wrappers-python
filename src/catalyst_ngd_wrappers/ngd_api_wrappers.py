@@ -196,8 +196,7 @@ def oauth2_authentication(func: callable) -> callable:
             return json_response
 
         if headers.get('key') or params.get('key'):
-            response = run_request(headers)
-            return response.json()
+            return run_request(headers)
 
         access_token = os.environ.get('ACCESS_TOKEN')
         if access_token:
