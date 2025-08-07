@@ -1,3 +1,6 @@
+'''Tools involved in deploying and managing the OS NGD API - Features wrappers.
+Can be applied to both Azure and AWS deployments.'''
+
 from marshmallow.exceptions import ValidationError
 
 from .ngd_api_wrappers import get_latest_collection_versions, get_specific_latest_collections

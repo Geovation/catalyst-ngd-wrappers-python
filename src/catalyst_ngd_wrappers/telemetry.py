@@ -1,9 +1,11 @@
+'''OS NGD API Telemetry Preparation
+Prepares telemetry data for logging requests made to the OS NGD API - Features endpoints.
+'''
+
 import os
 
 from .utils import flatten_coords
 
-LOG_REQUEST_DETAILS: bool = os.environ.get(
-    'LOG_REQUEST_DETAILS', 'True') == 'True'
 QUERY_PARAM_TELEMETRY_LENGTH_LIMIT: int = int(
     os.environ.get('QUERY_PARAM_TELEMETRY_LENGTH_LIMIT', '200'))
 

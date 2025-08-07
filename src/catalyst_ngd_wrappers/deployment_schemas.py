@@ -1,10 +1,5 @@
 '''
-Schemas for the API endpoints.
-    - ColSchema,
-    - LimitGeomSchema,
-    - LimitColSchema,
-    - GeomColSchema,
-    - LimitGeomColSchema
+Schemas which can be used for an Azure or AWS deployment of the OS NGD API - Features wrappers.
 '''
 
 from marshmallow import Schema, INCLUDE

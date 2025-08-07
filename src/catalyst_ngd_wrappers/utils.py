@@ -1,3 +1,5 @@
+'''Miscellaneous utility functions for the OS NGD API - Features wrappers.'''
+
 from json import JSONDecodeError
 
 from shapely.geometry import Point, LineString, Polygon
