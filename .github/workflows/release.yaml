@@ -2,6 +2,8 @@ name: Simple Versioned Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*.*.*'
 
