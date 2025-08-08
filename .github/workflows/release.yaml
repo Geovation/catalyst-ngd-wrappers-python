@@ -14,5 +14,6 @@ jobs:
 
       - name: Retrieve Git Tag
         run: |
-          TAG=$(git describe --tags --abbrev=0)
+          TAG=$(git describe --tags)
+          
           
