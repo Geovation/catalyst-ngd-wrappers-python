@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [metadata]
 name = "catalyst_ngd_wrappers"
-version = "v0.3.0"
+version = "0.3.1"
 requires-python = ">=3.11"
 dependencies = [
     "datetime==5.5",
