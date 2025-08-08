@@ -26,11 +26,6 @@ jobs:
           git commit -a -m "Update version to ${RELEASE_VERSION} in pyproject.toml"
           git push origin HEAD:main
 
-  release:
-    runs-on: ubuntu-latest
-    needs: update-version
-    steps:
-      - uses: actions/checkout@v2
       - name: Create GitHub Release
         uses: actions/create-release@v1
         env:
