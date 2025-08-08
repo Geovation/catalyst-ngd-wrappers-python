@@ -23,7 +23,7 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git commit -a -m "Update version to ${RELEASE_VERSION} in pyproject.toml"
-          git push origin:HEAD
+          git push origin HEAD:main
 
       - name: Create GitHub Release
         uses: actions/create-release@v1
