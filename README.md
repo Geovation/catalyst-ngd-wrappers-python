@@ -55,6 +55,45 @@ A wrapper for the [OS NGD API - Features](https://docs.os.uk/osngd/getting-start
 
 Returns the features as a geojson, as per the OS NGD API.
 
+## Output Specifications
+- **Format**
+    GeoJSON by default. If the _hierarchical-output=True_, a hierarchical json containing separate GeoJSONs according to collection and/or search area number. For failed requests, see 'Failed request response format' below.
+- **Response Metadata**:
+    - Attributes from OS NGD API - Features items request (refer to docs above for details)
+        - **type**: str
+        - **timeStamp**: str (date-time) - Format "YYYY-MM-DDTHH:MM:SS.sssssssZ"
+        - **numberReturned**: int
+        - **features**: array of Feature (object)
+        - **links** - This is absent if either _limit_ extension is applied, or if _hierarchical-output=False_ (if this attribute applies).
+        This is because in these cases the GeoJSON(s) comprising the response do not represent a single NGD feature request.
+    - Additional Catalyst attributes
+        - **numberOfReqeusts**: int - The number of NGD items requests from which the final response is compiled
+        - **numberOfRequestsByCollection**: dict[str: int] - The number of NGD items requests made, split by collection. Only included when _col_ extension applied and _hierarchical-output=False_.
+        - **numberReturnedByCollection**: dict[str: int] - The number of features returned, split by collection.
+        - **telemetryData**: dict - Only applies for the base wrapper. Contains a record of the telemetry data which has been logged.
+            - Method
+            - URL Path
+            - Path parameters
+            - Query Parameters
+            - Spatial bounding box of the response
+            - Number returned
+- **Feature-Level Attributes**
+    - **id**: str (uuid) - OSID of the feature
+    - **collection**: str - Collection the feature belongs to. This is an additional attribute supplied by catalyst
+    - **geometry**: dict - List-like representation of the feature's geometry, and the geometry type
+    - **searchAreaNumber**: int | list - The number of the search area where the feature is found. If a feature intersects multiple search areas, the numbers are given in a list. Only inclded when _geom_ extension applied and _hierarchical-output=False_. 
+    - **properties**: dict - Non-spatial attribution associated with the feature
+        - OS NGD attribution for each theme, collection, and feature type [here](https://docs.os.uk/osngd/data-structure)
+        - The collection name is added by catalyst
+        - When the _geom_ extension is applied, the searchAreaNumber value is also included
+    - **type**: str - object type ("Feature")
+- **Failed Response Format**
+   Json object specifying error metadata.  As the wrapper mimics the behaviour of an API and is designed for [API deployment](https://github.com/Geovation/catalyst-ngd-wrappers-azure).
+   - **code**: int - The error code, either from the OS NGD API or from the wrapper.
+   - **description**: str
+   - **help**: str - Where appropriate, a link to relevant documentation.
+   - **errorSource**: str - either 'OS NGD API' or 'Catalyst Wrapper', specifying whether the error arose within the NGD API or in the wrapper code.
+
 ## Install
 
 The library can be installed using `pip`. It is not currently published to a repository such as PyPI but it can be installed by direct link to the latest version tag on GitHub.
