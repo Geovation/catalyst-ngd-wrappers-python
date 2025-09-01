@@ -22,8 +22,8 @@ import requests as r
 from shapely import from_wkt
 from shapely.errors import GEOSException
 
-from .utils import prepare_parameters, handle_decode_error, multilevel_explode
-from .telemetry import prepare_telemetry_custom_dimensions
+from utils import prepare_parameters, handle_decode_error, multilevel_explode
+from telemetry import prepare_telemetry_custom_dimensions
 
 UNIVERSAL_TIMEOUT: int = 20
 RETRIES: int = 3
@@ -272,11 +272,11 @@ def ngd_items_request(
 ) -> dict:
     '''
     Calls items from the OS NGD API - Features
-        - https://osdatahub.os.uk/docs/wfs/overview
+        - https://www.ordnancesurvey.co.uk/products/os-ngd-api-features
         - https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features
     Parameters:
-        collection (str) - the feature collection to call from. Feature collection names and details can be found at https://api.os.uk/features/ngd/ofa/v1/collections/
-        params (dict, optional) - parameters to pass to the query as query parameters, supplied in a dictionary. Supported parameters are: bbox, bbox-crs, crs, datetime, filter, filter-crs, filter-lang, limit, offset
+        collection (str) - The feature collection to call from. Feature collection names and details can be found at https://api.os.uk/features/ngd/ofa/v1/collections/
+        params (dict, optional) - Parameters to pass to the API request as query parameters, supplied in a dictionary. Supported parameters are: bbox, bbox-crs, crs, datetime, filter, filter-crs, filter-lang, limit, offset. Find details of these API parameters on the OS technical docs: https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/features#get-collections-collectionid-items.
         filter_params (dict, optional) - OS NGD attribute filters to pass to the query within the 'filter' query_param. The can be used instead of or in addition to manually setting the filter in params.
             The key-value pairs will appended using the EQUAL TO [ = ] comparator. Any other CQL Operator comparisons must be set manually in params.
             Queryable attributes can be found in OS NGD codelists documentation https://docs.os.uk/osngd/code-lists/code-lists-overview, or by inserting the relevant collectionId into the https://api.os.uk/features/ngd/ofa/v1/collections/{{collectionId}}/queryables endpoint.
@@ -286,8 +286,7 @@ def ngd_items_request(
         use_latest_collection (boolean, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. bld-fts-building[-2]), the latest version is used.
             Note that if use_latest_collection but 'collection' does specify a version, the specified version is always used regardless of use_latest_collection.
         headers (dict, optional) - Headers to pass to the query. These can include bearer-token authentication.
-        access_token (str) - An access token, which will be added as bearer token to the headers.
-        **kwargs: other generic parameters to be passed to the requests.get()
+        **kwargs - other generic parameters to be passed to the requests.get()
 
     Returns the features as a geojson, as per the OS NGD API.
     '''

@@ -31,6 +31,30 @@ This is a python package which extends and enhances the flexibility and function
    - When CLIENT_ID (project api key) and CLIENT_SECRET (project api secret) are provided as environment variables, authentication is processed automatically via 5-minute access tokens.
    - Once these environment variables are supplied, the user does not need to do any further action to authenticate their requests.
 
+## Documentation
+
+### catalyst_ngd_wrappers.ngd_items_reqeust
+
+ngd_items_request(collection: str, params: dict = None, headers: dict = None, use_latest_collection: bool = False, authenticate: bool = True, log_request_details: bool = True, wkt: str = None, filter_params: dict = None, **kwargs)
+
+A wrapper for the [OS NGD API - Features](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features). Some additional tools beyond the core API functionality are provided:
+- Automatic OAuth2 authentication handling through environment variables. 
+- Automatic construction of simple 'description' filter parameters.
+- Automatic construction of spatial filters from well-known-text.
+- Automatic use of latest versions of OS collections.
+
+**Parameters:**
+   **collection** (str) - The feature collection to call from. Feature collection names and details can be found at https://api.os.uk/features/ngd/ofa/v1/collections/.
+   **params** (dict, optional) - Parameters to pass to the API request as query parameters, supplied in a dictionary. Supported parameters are: key, bbox, bbox-crs, crs, datetime, filter, filter-crs, filter-lang, limit, offset. Find details of these API parameters on the [OS technical docs](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/features#get-collections-collectionid-items).
+   **filter_params** (dict, optional) - OS NGD attribute filters to pass to the query within the 'filter' query_param. The can be used instead of or in addition to manually setting the filter in params.
+      The key-value pairs will appended using the EQUAL TO [ = ] comparator. Any other CQL Operator comparisons must be set manually in params. Queryable attributes can be found in OS NGD codelists documentation https://docs.os.uk/osngd/code-lists/code-lists-overview, or by inserting the relevant collectionId into the [https://api.os.uk/features/ngd/ofa/v1/collections/{{collectionId}}/queryables](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/queryables) endpoint.
+   **wkt** (string or shapely geometry object) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a string or as a Shapely geometry object.
+   Multi-geometries and Geometry Collections may be supplied, and any hierarchical geometries will first be flattened into a list of single-geometry search areas. The function automatically composes the full INTERSECTS filter and adds it to the 'filter' query parameter. Make sure that 'filter-crs' is set to the appropriate value.
+   **use_latest_collection** (boolean, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. bld-fts-building[-2]), the latest version is used. If 'collection' does specify a version, the specified version is always used regardless of use_latest_collection.
+   **\**kwargs** - other parameters to be passed to the [request.Session.request get method](https://requests.readthedocs.io/en/latest/api/#requests.Session.request) eg. headers, timeout.
+
+Returns the features as a geojson, as per the OS NGD API.
+
 ## Install
 
 The library can be installed using `pip`. It is not currently published to a repository such as PyPI but it can be installed by direct link to the latest version tag on GitHub.
