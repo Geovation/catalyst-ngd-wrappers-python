@@ -22,7 +22,7 @@ import requests as r
 from shapely import from_wkt
 from shapely.errors import GEOSException
 
-from utils import prepare_parameters, handle_decode_error, multilevel_explode
+from utils import prepare_parameters, handle_decode_error, multilevel_explode, construct_error_response
 from telemetry import prepare_telemetry_custom_dimensions
 
 UNIVERSAL_TIMEOUT: int = 20
@@ -124,13 +124,11 @@ def get_specific_latest_collections(collection: list[str], **kwargs) -> str:
         specific_latest_collections = {
             col: latest_collections[col] for col in collection}
     except KeyError as e:
-        return {
-            'code': 404,
-            'description': f'Collection {e} is not a supported Collection base name. The name must not include a version suffix. Please refer to the documentation for a list of supported Collections.',
-            'help': 'https://api.os.uk/features/ngd/ofa/v1/collections',
-            'errorSource': 'Catalyst Wrapper'
-        }
-
+        return construct_error_response(
+            status_code = 404,
+            message = f'Collection {e} is not a supported Collection base name. The name must not include a version suffix. Please refer to the documentation for a list of supported Collections.',
+            help_text = 'https://api.os.uk/features/ngd/ofa/v1/collections'
+        )
     return specific_latest_collections
 
 
@@ -228,11 +226,10 @@ def oauth2_authentication(func: callable) -> callable:
                 client_secret=client_secret
             )
         except PermissionError:
-            return {
-                'code': 401,
-                'description': 'Missing or invalid CLIENT_ID and/or CLIENT_SECRET. Make sure these are configured correctely in your environment variables.',
-                'errorSource': 'Catalyst Wrapper'
-            }
+            return construct_error_response(
+                status_code = 401,
+                message = 'Missing or invalid CLIENT_ID and/or CLIENT_SECRET. Make sure these are configured correctely in your environment variables.'
+            )
         os.environ['ACCESS_TOKEN'] = access_token
         headers['Authorization'] = f'Bearer {access_token}'
         return run_request(headers)
@@ -286,7 +283,7 @@ def ngd_items_request(
         use_latest_collection (boolean, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. bld-fts-building[-2]), the latest version is used.
             Note that if use_latest_collection but 'collection' does specify a version, the specified version is always used regardless of use_latest_collection.
         headers (dict, optional) - Headers to pass to the query. These can include bearer-token authentication.
-        **kwargs - other generic parameters to be passed to the requests.get()
+        **kwargs - other parameters to be passed to the request.Session.request get method eg. headers, timeout.
 
     Returns the features as a geojson, as per the OS NGD API.
     '''
@@ -369,12 +366,17 @@ def limit_extension(func: callable) -> callable:
 
         params = params.copy() if params else {}
 
+        if 'limit' in params:
+            return construct_error_response(
+                status_code = 400,
+                message = "With this Catalyst wrapper, 'limit' must be supplied as a function parameter and not as a params key.",
+            )
+
         if 'offset' in params:
-            return {
-                'code': 400,
-                'description': "'offset' is not a valid attribute for functions using this Catalyst wrapper.",
-                'errorSource': 'Catalyst Wrapper'
-            }
+            return construct_error_response(
+                status_code = 400,
+                message = "'offset' is not a valid attribute for functions using this Catalyst wrapper.",
+            )
 
         features = []
 
@@ -384,11 +386,10 @@ def limit_extension(func: callable) -> callable:
         offset = 0
 
         if not limit and not request_limit:
-            return {
-                'code': 400,
-                'description': 'At least one of limit or request_limit must be provided to prevent indefinitely numerous requests and high costs.',
-                'errorSource': 'Catalyst Wrapper'
-            }
+            return construct_error_response(
+                status_code = 400,
+                message = 'At least one of limit or request_limit must be provided to prevent indefinitely numerous requests and high costs.'
+            )
 
         while (request_count != request_limit) and (not (limit) or offset < limit):
 
@@ -501,12 +502,11 @@ def multigeometry_search_extension(func: callable) -> callable:
         try:
             full_geom = from_wkt(wkt) if isinstance(wkt, str) else wkt
         except GEOSException:
-            return {
-                'code': 400,
-                'description': 'The input geometry is not valid. Please ensure you have the correct formatting for your input geometry type.',
-                'help': 'http://libgeos.org/specifications/wkt/',
-                'errorSource': 'Catalyst Wrapper'
-            }
+            return construct_error_response(
+                status_code=400,
+                message='The input geometry is not valid. Please ensure you have the correct formatting for your input geometry type.',
+                help='http://libgeos.org/specifications/wkt/',
+            )
 
         search_areas = []
         partial_geoms = multilevel_explode(full_geom)

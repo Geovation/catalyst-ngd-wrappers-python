@@ -88,6 +88,21 @@ def multilevel_explode(shape: BaseGeometry) -> list[Polygon | LineString | Point
         result_list.extend(lower_shape_exploded)
     return result_list
 
+def construct_error_response(
+        message: str,
+        status_code: int = 500,
+        help_text: str = None,
+        error_source: str = 'Catalyst Wrapper'
+    ) -> dict:
+    '''Constructs a structured error response dictionary.'''
+    response = {
+        "code": status_code,
+        "description": message
+    }
+    if help_text:
+        response['help'] = help_text
+    response['errorSource'] = error_source
+    return response
 
 def handle_decode_error(error: JSONDecodeError, status_code: int = 500) -> dict:
     '''Handles JSONDecodeError exceptions by extracting the error message and returning a structured error response.'''
@@ -98,8 +113,8 @@ def handle_decode_error(error: JSONDecodeError, status_code: int = 500) -> dict:
             'Error Text': error_string,
             'Help (Catalyst)': 'This could be due to a request URI which is too long or an input geometry which is too complex.'
         }
-    return {
-        "code": status_code,
-        "description": error_string,
-        "errorSource": "OS NGD API"
-    }
+    return construct_error_response(
+        message = error_string,
+        status_code = status_code,
+        error_source = 'OS NGD API'
+    )
