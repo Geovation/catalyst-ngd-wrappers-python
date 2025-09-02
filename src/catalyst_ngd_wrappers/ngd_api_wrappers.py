@@ -368,13 +368,11 @@ def limit_extension(func: callable) -> callable:
 
         if 'limit' in params:
             return construct_error_response(
-                status_code = 400,
                 message = "With this Catalyst wrapper, 'limit' must be supplied as a function parameter and not as a params key.",
             )
 
         if 'offset' in params:
             return construct_error_response(
-                status_code = 400,
                 message = "'offset' is not a valid attribute for functions using this Catalyst wrapper.",
             )
 
@@ -387,7 +385,6 @@ def limit_extension(func: callable) -> callable:
 
         if not limit and not request_limit:
             return construct_error_response(
-                status_code = 400,
                 message = 'At least one of limit or request_limit must be provided to prevent indefinitely numerous requests and high costs.'
             )
 
@@ -503,9 +500,8 @@ def multigeometry_search_extension(func: callable) -> callable:
             full_geom = from_wkt(wkt) if isinstance(wkt, str) else wkt
         except GEOSException:
             return construct_error_response(
-                status_code=400,
-                message='The input geometry is not valid. Please ensure you have the correct formatting for your input geometry type.',
-                help='http://libgeos.org/specifications/wkt/',
+                message = 'The input geometry is not valid. Please ensure you have the correct formatting for your input geometry type.',
+                help = 'http://libgeos.org/specifications/wkt/',
             )
 
         search_areas = []

@@ -90,7 +90,7 @@ def multilevel_explode(shape: BaseGeometry) -> list[Polygon | LineString | Point
 
 def construct_error_response(
         message: str,
-        status_code: int = 500,
+        status_code: int = 400,
         help_text: str = None,
         error_source: str = 'Catalyst Wrapper'
     ) -> dict:
