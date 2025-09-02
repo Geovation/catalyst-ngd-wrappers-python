@@ -31,6 +31,22 @@ This is a python package which extends and enhances the flexibility and function
    - When CLIENT_ID (project api key) and CLIENT_SECRET (project api secret) are provided as environment variables, authentication is processed automatically via 5-minute access tokens.
    - Once these environment variables are supplied, the user does not need to do any further action to authenticate their requests.
 
+## Collections Endpoint Wrappers
+
+Documentation for wrappers which extend the [NGD Collections endpoint](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/collections). No authentication is required for these wrappers.
+
+### `catalyst_ngd_wrappers.get_latest_collection_versions`
+
+Returns the latest collection versions of each NGD collection in a simple, readable format.
+- Feature collections follow the following naming convention: theme-collection-featuretype-version (eg. bld-fts-buildingline-2)
+- The output of this function maps base feature collection names (theme-collection-featuretype) to the full name, including the latest version.
+- This can be used to ensure that software is always using the latest version of a feature collection.
+- More details on feature collection naming can be found on the [OS documentation platform](https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available).
+
+**Parameters:**
+   - **`recent_update_days`** (int, default None) - If supplied, then collection versions which have been released within the specified number of days are listed under 'recent-collection-updates' in the response.
+   - **`**kwargs`** - Other parameters to be passed to the [request.Session.request get method](https://requests.readthedocs.io/en/latest/api/#requests.Session.request) eg. `timeout`.
+
 ## Features Endpoint Wrappers
 
 Documentation for wrappers which extend the [NGD Features endpoint](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/features).
@@ -88,7 +104,7 @@ This extension serves to extend the maximum number of features returned above th
    - **`request_limit`** (int, default 50) - An alternative means of limiting the response; by number of requests rather than features. Each OS NGD Feature request returns a maximum of 100 features.
    - **`**kwargs`**  - Other parameters passed to `catalyst_ngd_wrappers.items`.
 
-**IMPORTANT**: When the limit extension is used alongside the geom and/or col extensions, the limit and request_limit constraints apply _per search area, per collection_. Consider [pricing](https://osdatahub.os.uk/plans).
+**IMPORTANT**: When the limit extension is used alongside the geom and/or col extensions, the limit and request_limit constraints apply _per search area, per collection_. Consider [pricing](https://osdatahub.os.uk/plans#:~:text=OS%20NGD%20API%20%E2%80%93%20Features).
 
 To prevent indefinite requests and high costs, **at least one of limit or request_limit must be provided**, although there is no limit to the upper value these can be. The function will make multiple requests to the function to compile all features from the specified collection, returning a dictionary with the features and metadata. When both limit and request_limit are applied, the lower constraint is applied.
 
@@ -117,7 +133,7 @@ NOTE: If a limit is supplied for the maximum number of features to be returned o
    - **`hierarchical_output`** (bool, default False) - If True, then results are returned in a hierarchical structure of GeoJSONs according to collection (and search area if applicable). If False, results are returned as a single GeoJSON.
    - **`**kwargs`** - Other parameters passed to `catalyst_ngd_wrappers.items`, or the `limit`/`geom` extension if applied.
 
-## Output Specifications
+### Output Specifications
 - **Format**
     GeoJSON by default. If the _hierarchical-output=True_, a hierarchical json containing separate GeoJSONs according to collection and/or search area number. For failed requests, see 'Failed request response format' below.
 - **Response Metadata**:
