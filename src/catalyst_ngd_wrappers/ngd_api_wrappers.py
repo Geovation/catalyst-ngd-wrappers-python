@@ -368,7 +368,7 @@ def limit_extension(func: callable) -> callable:
 
         if 'limit' in params:
             return construct_error_response(
-                message = "With this Catalyst wrapper, 'limit' must be supplied as a function parameter and not as a params key.",
+                message = "With this Catalyst wrapper, the limit must be supplied as a function parameter and not as a key-value pair in params.",
             )
 
         if 'offset' in params:

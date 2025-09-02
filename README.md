@@ -55,11 +55,14 @@ A wrapper for the [OS NGD API - Features](https://docs.os.uk/osngd/getting-start
 
 ### limit extension
 
-This extension serves to extend the maximum number of features returned above the default maximum 100 by looping through multiple requests. The following two query parameters are made available.
-- **limit** (int, optional): The maximum number of features to be returned by looping through multiple NGD requests. With the limit extension, this paramater is available as a direct function parameter, 
-- **request_limit** (int, default 50):
-To prevent indefinite requests and high costs, at least one of limit or request_limit must be provided, although there is no limit to the upper value these can be.
-It will make multiple requests to the function to compile all features from the specified collection, returning a dictionary with the features and metadata.
+This extension serves to extend the maximum number of features returned above the default maximum 100 by looping through multiple requests. The following two query parameters are made available:
+
+- **limit** (int, optional): The maximum number of features to be returned by looping through multiple NGD requests. With the limit extension, this paramater must be supplied as a direct function parameter, rather than as a key-value pair in params.
+- **request_limit** (int, default 50): An alternative means of limiting the response; by number of requests rather than features. Each OS NGD Feature request returns a maximum of 100 features.
+
+**IMPORTANT**: When the limit extension is used alongside the geom and/or col extensions, the limit and request_limit constraints apply _per search area, per collection_. Consider [pricing](https://osdatahub.os.uk/plans).
+
+To prevent indefinite requests and high costs, **at least one of limit or request_limit must be provided**, although there is no limit to the upper value these can be. The function will make multiple requests to the function to compile all features from the specified collection, returning a dictionary with the features and metadata. When both limit and request_limit are applied, the lower constraint is applied.
 
 Returns the features as a geojson, as per the OS NGD API.
 
