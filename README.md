@@ -2,7 +2,7 @@
 
 This is a python package which extends and enhances the flexibility and functionality of Ordnance Survey NGD API - Features.
 
-## Features
+## Features and Capabilies Provided by the Wrappers
 
 1. Wrapping core [OS NGD API - Features](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features) functionality
    - Calls to the [Features](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/features) and [Collections](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/collections) endpoints can be made through python functions.
@@ -63,7 +63,7 @@ Returns the latest collection(s) from the base name of given collection(s). Beha
    - When `recent_update_days` is None, a simple dictionary of key-value pairs mapping base collection names to their versioned names.
    - When `recent_update_days` is supplied:
       - **collection-lookup**: dict[str: str] - Key-value pairs mapping base collection names to their versioned names.
-      - **recent-update-threshold-days**: int - The number of days into the past at which newly released collections are featured under 'recent-collection-updates'. This includes both new feature collections and new versions.
+      - **recent-update-threshold-days**: int - The number of days into the past at which newly released collections are featured under 'recent-collection-updates'. This includes both new feature collections and new versions of existing collections.
       - **recent-collection-updates**: list[str] - A list of versioned collection names which have been released in the last number of days specified by `recent-update-days`.
 - **Failed Response Format**
    Dictionary specifying error metadata.  As the wrapper mimics the behaviour of an API and is designed for [API deployment](https://github.com/Geovation/catalyst-ngd-wrappers-azure).
