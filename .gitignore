@@ -2,4 +2,4 @@
 .venv
 **/.DS_Store
 src/catalyst_ngd_wrappers/__pycache__
-test.ipynb
+src/catalyst_ngd_wrappers/test.ipynb
