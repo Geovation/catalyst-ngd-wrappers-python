@@ -99,9 +99,9 @@ Returns the features as a geojson, as per the OS NGD API.
 An alternative means of returning OS NGD features for a search area which is GeometryCollection or a multi-geometry (MultiPoint, MultiLinestring, MultiPolygon). This will in some cases improve speed, performance, and prevent the call from timing out.
 
 **Parameters:**
-   - **wkt** (string or shapely geometry object, optional) - A means of searching a geometry for features. The search area(s) must be supplied in well-known-text, either in a string or as a Shapely geometry object. Multi-geometries and Geometry Collections may be supplied, and any hierarchical geometries will first be flattened into a list of single-geometry search areas. The function automatically composes the full INTERSECTS filter and adds it to the `filter` query parameter. Make sure that `filter-crs` is set to the appropriate value.
-   - **hierarchical_output** (bool, default False) - If True, then results are returned in a hierarchical structure of GeoJSONs according to search area (and collection if applicable). If False, results are returned as a single GeoJSON.
-   - **\*\*kwargs**  - Other parameters passed to `catalyst_ngd_wrappers.items`, or the limit extension if applied.
+   - **`wkt`** (string or shapely geometry object, optional) - A means of searching a geometry for features. The search area(s) must be supplied in well-known-text, either in a string or as a Shapely geometry object. Multi-geometries and Geometry Collections may be supplied, and any hierarchical geometries will first be flattened into a list of single-geometry search areas. The function automatically composes the full INTERSECTS filter and adds it to the `filter` query parameter. Make sure that `filter-crs` is set to the appropriate value.
+   - **`hierarchical_output`** (bool, default False) - If True, then results are returned in a hierarchical structure of GeoJSONs according to search area (and collection if applicable). If False, results are returned as a single GeoJSON.
+   - **`\*\*kwargs`**  - Other parameters passed to `catalyst_ngd_wrappers.items`, or the limit extension if applied.
 
 Each component shape of the multi-geometry will be searched in turn. When a hierarchical multi-geometry is supplied (eg. a GeometryCollection containing MultiPolygons), it is flattened into a single set of its component single-geometry shapes.
 
@@ -115,7 +115,7 @@ NOTE: If a limit is supplied for the maximum number of features to be returned o
 **Parameters:**
    - **collection** (list of str) - A list of [OS NGD features collections](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/features#get-collections-collectionid-items) to call from.
    - **hierarchical_output** (bool, default False) - If True, then results are returned in a hierarchical structure of GeoJSONs according to collection (and search area if applicable). If False, results are returned as a single GeoJSON.
-   - **\**kwargs** - Other parameters passed to `catalyst_ngd_wrappers.items`, or the `limit`/`geom` extension if applied.
+   - **\*\*kwargs** - Other parameters passed to `catalyst_ngd_wrappers.items`, or the `limit`/`geom` extension if applied.
 
 ## Output Specifications
 - **Format**
