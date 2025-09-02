@@ -57,6 +57,21 @@ Returns the latest collection(s) from the base name of given collection(s). Beha
    - **`collection`** (list of str) - A list of NGD feature collections in the format theme-collection-featuretype, excluding the version number (eg. bld-fts-buildingline).
    - **`**kwargs`** - Other parameters to be passed to `catalyst_ngd_wrappers.get_latest_collection_versions`.
 
+### Output Specifications
+- **Successful Response Format**
+   Dictionary in one of two formats:
+   - When `recent_update_days` is None, a simple dictionary of key-value pairs mapping base collection names to their versioned names.
+   - When `recent_update_days` is supplied:
+      - **collection-lookup**: dict[str: str] - Key-value pairs mapping base collection names to their versioned names.
+      - **recent-update-threshold-days**: int - The number of days into the past at which newly released collections are featured under 'recent-collection-updates'. This includes both new feature collections and new versions.
+      - **recent-collection-updates**: list[str] - A list of versioned collection names which have been released in the last number of days specified by `recent-update-days`.
+- **Failed Response Format**
+   Dictionary specifying error metadata.  As the wrapper mimics the behaviour of an API and is designed for [API deployment](https://github.com/Geovation/catalyst-ngd-wrappers-azure).
+   - **code**: int - The error code, either from the OS NGD API or from the wrapper.
+   - **description**: str
+   - **help**: str - Where appropriate, a link to relevant documentation.
+   - **errorSource**: str - either 'OS NGD API' or 'Catalyst Wrapper', specifying whether the error arose within the NGD API or in the wrapper code.
+
 ## Features Endpoint Wrappers
 
 Documentation for wrappers which extend the [NGD Features endpoint](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/features).
@@ -131,7 +146,7 @@ An alternative means of returning OS NGD features for a search area which is Geo
 
 Each component shape of the multi-geometry will be searched in turn. When a hierarchical multi-geometry is supplied (eg. a GeometryCollection containing MultiPolygons), it is flattened into a single set of its component single-geometry shapes.
 
-The results are returned in a quasi-GeoJSON format, with features returned under 'searchAreas' in a list, where each item is a json object of results from one search area.
+The results are returned in a quasi-GeoJSON format, with features returned under 'searchAreas' in a list, where each item is a dictionary of results from one search area.
 The search areas are labelled numerically, with the number stored under 'searchAreaNumber'.
 
 NOTE: If a limit is supplied for the maximum number of features to be returned or requests to be made, this will apply to _each search area individually_, not to the overall number of results.
@@ -145,7 +160,7 @@ NOTE: If a limit is supplied for the maximum number of features to be returned o
 
 ### Output Specifications
 - **Format**
-    GeoJSON by default. If the _hierarchical-output=True_, a hierarchical json containing separate GeoJSONs according to collection and/or search area number. For failed requests, see 'Failed request response format' below.
+    GeoJSON by default. If the `hierarchical-output=True`, a hierarchical dictionary containing separate GeoJSONs according to collection and/or search area number. For failed requests, see 'Failed request response format' below.
 - **Response Metadata**:
     - Attributes from OS NGD API - Features items request (refer to docs above for details)
         - **type**: str
@@ -176,7 +191,7 @@ NOTE: If a limit is supplied for the maximum number of features to be returned o
         - When the `geom` extension is applied, the searchAreaNumber value is also included
     - **type**: str - object type ("Feature")
 - **Failed Response Format**
-   Json object specifying error metadata.  As the wrapper mimics the behaviour of an API and is designed for [API deployment](https://github.com/Geovation/catalyst-ngd-wrappers-azure).
+   Dictionary specifying error metadata.  As the wrapper mimics the behaviour of an API and is designed for [API deployment](https://github.com/Geovation/catalyst-ngd-wrappers-azure).
    - **code**: int - The error code, either from the OS NGD API or from the wrapper.
    - **description**: str
    - **help**: str - Where appropriate, a link to relevant documentation.
