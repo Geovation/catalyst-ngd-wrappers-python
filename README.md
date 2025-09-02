@@ -33,18 +33,18 @@ This is a python package which extends and enhances the flexibility and function
 
 ## Documentation
 
-## Authentication
+### Authentication
 
 Authentication is only required for the catalyst_ngd_wrappers.items function and its extensions. You will first need to create a project on the [OS DataHub](https://osdatahub.os.uk/projects), and ensure that OS NGD API - Features is added to the project. Then, authentication can be achieved in the following ways:
 
 - **API Key**
-    - Requests can be authenticated using all the [OS NGD API - Features authentication methods](https://docs.os.uk/os-apis/core-concepts/authentication) (keys and access tokens). The methods are:
+    - Requests can be authenticated using all the [OS NGD API - Features authentication methods](https://docs.os.uk/os-apis/core-concepts/authentication) (keys and access tokens). All these methods can be implemented exactly as they would be using the python requests.get() method for the OS NGD Features API. The methods are:
         - OAuth2 bearer token
         - HTTP Header key
         - HTTP Query Parameter key
 - **OAuth2 Environment Variables**
     - If CLIENT_ID and CLIENT_SECRET are set as environment variables, the API handles OAuth2 authentication automatically, generating and reusing access tokens until they expire.
-    - CLIENT_ID should be set as the Project API Key value, and CLIENT_SECRET should be set as the Project API Secret value
+    - CLIENT_ID should be set as the Project API Key value, and CLIENT_SECRET should be set as the Project API Secret value.
 
 ### catalyst_ngd_wrappers.items
 
