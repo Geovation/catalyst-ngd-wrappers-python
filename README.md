@@ -58,17 +58,13 @@ Returns the latest collection(s) from the base name of given collection(s). Beha
    - **`**kwargs`** - Other parameters to be passed to `catalyst_ngd_wrappers.get_latest_collection_versions`.
 
 ### Output Specifications
-- **Successful Response Format**
-
-Dictionary in one of two formats:
+- **Successful Response Format**: A dictionary in one of two formats:
    - When `recent_update_days` is None, a simple dictionary of key-value pairs mapping base collection names to their versioned names.
    - When `recent_update_days` is supplied:
       - **collection-lookup**: dict[str: str] - Key-value pairs mapping base collection names to their versioned names.
       - **recent-update-threshold-days**: int - The number of days into the past at which newly released collections are featured under 'recent-collection-updates'. This includes both new feature collections and new versions of existing collections.
       - **recent-collection-updates**: list[str] - A list of versioned collection names which have been released in the last number of days specified by `recent-update-days`.
-- **Failed Response Format**
-
-Dictionary specifying error metadata.  As the wrapper mimics the behaviour of an API and is designed for [API deployment](https://github.com/Geovation/catalyst-ngd-wrappers-azure).
+- **Failed Response Format**: A dictionary specifying error metadata.  As the wrapper mimics the behaviour of an API and is designed for [API deployment](https://github.com/Geovation/catalyst-ngd-wrappers-azure).
    - **code**: int - The error code, either from the OS NGD API or from the wrapper.
    - **description**: str
    - **help**: str - Where appropriate, a link to relevant documentation.
@@ -161,9 +157,7 @@ NOTE: If a limit is supplied for the maximum number of features to be returned o
    - **`**kwargs`** - Other parameters passed to `catalyst_ngd_wrappers.items`, or the `limit`/`geom` extension if applied.
 
 ### Output Specifications
-- **Format**
-
-GeoJSON by default. If the `hierarchical-output=True`, a hierarchical dictionary containing separate GeoJSONs according to collection and/or search area number. For failed requests, see 'Failed request response format' below.
+- **Format**: A GeoJSON by default. If the `hierarchical-output=True`, a hierarchical dictionary containing separate GeoJSONs according to collection and/or search area number. For failed requests, see 'Failed request response format' below.
 - **Response Metadata**:
     - Attributes from OS NGD API - Features items request (refer to docs above for details)
         - **type**: str
@@ -193,9 +187,7 @@ GeoJSON by default. If the `hierarchical-output=True`, a hierarchical dictionary
         - The collection name is added by catalyst
         - When the `geom` extension is applied, the searchAreaNumber value is also included
     - **type**: str - object type ("Feature")
-- **Failed Response Format**
-
-Dictionary specifying error metadata.  As the wrapper mimics the behaviour of an API and is designed for [API deployment](https://github.com/Geovation/catalyst-ngd-wrappers-azure).
+- **Failed Response Format**: A dictionary specifying error metadata.  As the wrapper mimics the behaviour of an API and is designed for [API deployment](https://github.com/Geovation/catalyst-ngd-wrappers-azure).
    - **code**: int - The error code, either from the OS NGD API or from the wrapper.
    - **description**: str
    - **help**: str - Where appropriate, a link to relevant documentation.
