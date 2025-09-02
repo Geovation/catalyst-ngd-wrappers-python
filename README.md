@@ -44,13 +44,13 @@ A wrapper for the [OS NGD API - Features](https://docs.os.uk/osngd/getting-start
 - Automatic use of latest versions of OS collections.
 
 **Parameters:**
-   **collection** (str) - The feature collection to call from. Feature collection names and details can be found at https://api.os.uk/features/ngd/ofa/v1/collections/.
+   **collection** (str) - The OS NGD feature collection to call from. Feature collection names and details can be found at https://api.os.uk/features/ngd/ofa/v1/collections/.
    **params** (dict, optional) - Parameters to pass to the API request as query parameters, supplied in a dictionary. Supported parameters are: key, bbox, bbox-crs, crs, datetime, filter, filter-crs, filter-lang, limit, offset. Find details of these API parameters on the [OS technical docs](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/features#get-collections-collectionid-items).
    **filter_params** (dict, optional) - OS NGD attribute filters to pass to the query within the 'filter' query_param. The can be used instead of or in addition to manually setting the filter in params.
       The key-value pairs will appended using the EQUAL TO [ = ] comparator. Any other CQL Operator comparisons must be set manually in params. Queryable attributes can be found in OS NGD codelists documentation https://docs.os.uk/osngd/code-lists/code-lists-overview, or by inserting the relevant collectionId into the [https://api.os.uk/features/ngd/ofa/v1/collections/{{collectionId}}/queryables](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/queryables) endpoint.
    **wkt** (string or shapely geometry object, optional) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a string or as a Shapely geometry object. The function automatically composes the full INTERSECTS filter and adds it to the 'filter' query parameter. Make sure that 'filter-crs' is set to the appropriate value.
    **use_latest_collection** (boolean, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. bld-fts-building[-2]), the latest version is used. If 'collection' does specify a version, the specified version is always used regardless of use_latest_collection.
-   - **log-request-details**: bool, default True - _Telemetry logging currently unimplemented_. If True, adds extra telemetry metadata to the request.
+   **log_request_details**: bool, default True - If True, adds extra telemetry metadata to the request, which can be used for logging when deployed as an API.
    **\**kwargs** - Other parameters to be passed to the [request.Session.request get method](https://requests.readthedocs.io/en/latest/api/#requests.Session.request) eg. headers, timeout.
 
 ### limit extension
@@ -58,9 +58,9 @@ A wrapper for the [OS NGD API - Features](https://docs.os.uk/osngd/getting-start
 This extension serves to extend the maximum number of features returned above the default maximum 100 by looping through multiple requests.
 
 **Parameters:**
-   - **limit** (int, optional) - The maximum number of features to be returned by looping through multiple NGD requests. With the limit extension, this paramater must be supplied as a direct function parameter, rather than as a key-value pair in params.
-   - **request_limit** (int, default 50) - An alternative means of limiting the response; by number of requests rather than features. Each OS NGD Feature request returns a maximum of 100 features.
-   - **\**kwargs** - Other parameters passed to `catalyst_ngd_wrappers.items`.
+   **limit** (int, optional) - The maximum number of features to be returned by looping through multiple NGD requests. With the limit extension, this paramater must be supplied as a direct function parameter, rather than as a key-value pair in params.
+   **request_limit** (int, default 50) - An alternative means of limiting the response; by number of requests rather than features. Each OS NGD Feature request returns a maximum of 100 features.
+   **\**kwargs** - Other parameters passed to `catalyst_ngd_wrappers.items`.
 
 **IMPORTANT**: When the limit extension is used alongside the geom and/or col extensions, the limit and request_limit constraints apply _per search area, per collection_. Consider [pricing](https://osdatahub.os.uk/plans).
 
@@ -74,8 +74,8 @@ An alternative means of returning OS NGD features for a search area which is Geo
 
 **Parameters:**
    **wkt** (string or shapely geometry object, optional) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a string or as a Shapely geometry object. Multi-geometries and Geometry Collections may be supplied, and any hierarchical geometries will first be flattened into a list of single-geometry search areas. The function automatically composes the full INTERSECTS filter and adds it to the 'filter' query parameter. Make sure that 'filter-crs' is set to the appropriate value.
-   - **hierarchical-output** (bool, default False) - If True, then results are returned in a hierarchical structure of GeoJSONs according to search area (and collection if applicable). If False, results are returned as a single GeoJSON.
-   - **\**kwargs** - Other parameters passed to `catalyst_ngd_wrappers.items`, or the limit extension if applied.
+   **hierarchical_output** (bool, default False) - If True, then results are returned in a hierarchical structure of GeoJSONs according to search area (and collection if applicable). If False, results are returned as a single GeoJSON.
+   **\**kwargs** - Other parameters passed to `catalyst_ngd_wrappers.items`, or the limit extension if applied.
 
 Each component shape of the multi-geometry will be searched in turn. When a hierarchical multi-geometry is supplied (eg. a GeometryCollection containing MultiPolygons), it is flattened into a single set of its component single-geometry shapes.
 
@@ -83,6 +83,13 @@ The results are returned in a quasi-GeoJSON format, with features returned under
 The search areas are labelled numerically, with the number stored under 'searchAreaNumber'.
 
 NOTE: If a limit is supplied for the maximum number of features to be returned or requests to be made, this will apply to _each search area individually_, not to the overall number of results.
+
+### col extension
+
+**Parameters:**
+   **collection** (list of str) - A list of [OS NGD features collections](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/features#get-collections-collectionid-items) to call from.
+   **hierarchical_output** (bool, default False) - If True, then results are returned in a hierarchical structure of GeoJSONs according to collection (and search area if applicable). If False, results are returned as a single GeoJSON.
+   **\**kwargs** - Other parameters passed to `catalyst_ngd_wrappers.items`, or the limit/geom extension if applied.
 
 ## Output Specifications
 - **Format**
