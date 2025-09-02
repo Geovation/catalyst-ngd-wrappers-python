@@ -47,6 +47,16 @@ Returns the latest collection versions of each NGD collection in a simple, reada
    - **`recent_update_days`** (int, default None) - If supplied, then collection versions which have been released within the specified number of days are listed under 'recent-collection-updates' in the response.
    - **`**kwargs`** - Other parameters to be passed to the [request.Session.request get method](https://requests.readthedocs.io/en/latest/api/#requests.Session.request) eg. `timeout`.
 
+### `catalyst_ngd_wrappers.get_specific_latest_collections`
+
+Returns the latest collection(s) from the base name of given collection(s). Behaves like `catalyst_ngd_wrappers.get_latest_collection_versions`, except that the result feature only a specified subset of feature collections.
+- Output will supply a dictionary completing the full name of the feature collections by appending the latest version number (eg. bld-fts-buildingline-2).
+- More details on feature collection naming can be found on the [OS documentation platform](https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features/what-data-is-available).
+
+**Parameters:**
+   - **`collection`** (list of str) - A list of NGD feature collections in the format theme-collection-featuretype, excluding the version number (eg. bld-fts-buildingline).
+   - **`**kwargs`** - Other parameters to be passed to `catalyst_ngd_wrappers.get_latest_collection_versions`.
+
 ## Features Endpoint Wrappers
 
 Documentation for wrappers which extend the [NGD Features endpoint](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/features).
