@@ -33,7 +33,7 @@ This is a python package which extends and enhances the flexibility and function
 
 ## Features Endpoint Wrappers
 
-
+Documentation for wrappers which extend the [NGD Features endpoint](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/features).
 
 ### Authentication
 
@@ -48,7 +48,7 @@ Authentication is only required for the catalyst_ngd_wrappers.items function and
     - If CLIENT_ID and CLIENT_SECRET are set as environment variables, the API handles OAuth2 authentication automatically, generating and reusing access tokens until they expire.
     - CLIENT_ID should be set as the Project API Key value, and CLIENT_SECRET should be set as the Project API Secret value.
 
-### catalyst_ngd_wrappers.items
+### `catalyst_ngd_wrappers.items`
 
 ngd_items_request(collection: str, params: dict = None, headers: dict = None, use_latest_collection: bool = False, authenticate: bool = True, log_request_details: bool = True, wkt: str = None, filter_params: dict = None, **kwargs)
 
@@ -79,7 +79,7 @@ A wrapper for the [OS NGD API - Features](https://docs.os.uk/osngd/getting-start
 | http://www.opengis.net/def/crs/EPSG/0/4326   | 4326      |
 | http://www.opengis.net/def/crs/OGC/1.3/CRS84 | CRS84     |
 
-### limit extension
+### `limit` Extension
 
 This extension serves to extend the maximum number of features returned above the default maximum 100 by looping through multiple requests.
 
@@ -94,7 +94,7 @@ To prevent indefinite requests and high costs, **at least one of limit or reques
 
 Returns the features as a geojson, as per the OS NGD API.
 
-### geom extension
+### `geom` Extension
 
 An alternative means of returning OS NGD features for a search area which is GeometryCollection or a multi-geometry (MultiPoint, MultiLinestring, MultiPolygon). This will in some cases improve speed, performance, and prevent the call from timing out.
 
@@ -110,7 +110,7 @@ The search areas are labelled numerically, with the number stored under 'searchA
 
 NOTE: If a limit is supplied for the maximum number of features to be returned or requests to be made, this will apply to _each search area individually_, not to the overall number of results.
 
-### col extension
+### `col` Extension
 
 **Parameters:**
    - **collection** (list of str) - A list of [OS NGD features collections](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/features#get-collections-collectionid-items) to call from.
