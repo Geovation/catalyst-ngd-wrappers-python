@@ -45,8 +45,8 @@ Authentication is only required for the catalyst_ngd_wrappers.items function and
         - HTTP Header key
         - HTTP Query Parameter key
 - **OAuth2 Environment Variables**
-    - If CLIENT_ID and CLIENT_SECRET are set as environment variables, the API handles OAuth2 authentication automatically, generating and reusing access tokens until they expire.
-    - CLIENT_ID should be set as the Project API Key value, and CLIENT_SECRET should be set as the Project API Secret value.
+    - If `CLIENT_ID` and `CLIENT_SECRET` are set as environment variables, the API handles OAuth2 authentication automatically, generating and reusing access tokens until they expire.
+    - `CLIENT_ID` should be set as the Project API Key value, and `CLIENT_SECRET` should be set as the Project API Secret value.
 
 ### `catalyst_ngd_wrappers.items`
 
@@ -60,15 +60,15 @@ A wrapper for the [OS NGD API - Features](https://docs.os.uk/osngd/getting-start
 
 **Parameters:**
    - **collection** (str) - The OS NGD feature collection to call from. Feature collection names and details can be found at https://api.os.uk/features/ngd/ofa/v1/collections/.
-   - **params** (dict, optional) - Parameters to pass to the API request as query parameters, supplied in a dictionary. Supported parameters are: key, bbox, bbox-crs, crs, datetime, filter, filter-crs, filter-lang, limit, offset. Find details of these API parameters on the [OS technical docs](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/features#get-collections-collectionid-items).
-   - **filter_params** (dict, optional) - OS NGD attribute filters to pass to the query within the 'filter' query_param. The can be used instead of or in addition to manually setting the filter in params.
+   - **params** (dict, optional) - Parameters to pass to the API request as query parameters, supplied in a dictionary. Supported parameters are: `key`, `bbox`, `bbox-crs`, `crs`, `datetime`, `filter`, `filter-crs`, `filter-lang`, `limit`, `offset`. Find details of these API parameters on the [OS technical docs](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/features#get-collections-collectionid-items).
+   - **filter_params** (dict, optional) - OS NGD attribute filters to pass to the query within the `filter` query param. The can be used instead of or in addition to manually setting the filter in params.
       The key-value pairs will appended using the EQUAL TO [ = ] comparator. Any other CQL Operator comparisons must be set manually in params. Queryable attributes can be found in OS NGD codelists documentation https://docs.os.uk/osngd/code-lists/code-lists-overview, or by inserting the relevant collectionId into the [https://api.os.uk/features/ngd/ofa/v1/collections/{{collectionId}}/queryables](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/queryables) endpoint.
       - **crs handling**: In addition to the full URI identifiers, this wrapper allows for 'shorthand' numerical identification of coordinate reference systems (see table below). This applies for `crs`, `filter-crs`, and `bbox-crs`.
-   - **wkt** (string or shapely geometry object, optional) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a string or as a Shapely geometry object. The function automatically composes the full INTERSECTS filter and adds it to the 'filter' query parameter. Make sure that 'filter-crs' is set to the appropriate value.
+   - **wkt** (string or shapely geometry object, optional) - A means of searching a geometry for features. The search area(s) must be supplied in well-known-text, either in a string or as a Shapely geometry object. The function automatically composes the full INTERSECTS filter and adds it to the 'filter' query parameter. Make sure that `filter-crs` is set to the appropriate value.
    - **use_latest_collection** (boolean, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. bld-fts-building[-2]), the latest version is used. If 'collection' does specify a version, the specified version is always used regardless of use_latest_collection.
    - **authenticate** (boolean, default True) - If True, the request is authenticated using OAuth2. This requires the CLIENT_ID and CLIENT_SECRET environment variables to be set. If False, no authentication is used, and an API key must be supplied in either the headers or params.
    - **log_request_details**: bool, default True - If True, adds extra telemetry metadata to the request, which can be used for logging when deployed as an API.
-   - **\*\*kwargs**  - Other parameters to be passed to the [request.Session.request get method](https://requests.readthedocs.io/en/latest/api/#requests.Session.request) eg. headers, timeout.
+   - **\*\*kwargs**  - Other parameters to be passed to the [request.Session.request get method](https://requests.readthedocs.io/en/latest/api/#requests.Session.request) eg. `headers`, `timeout`.
 
 ### CRS shorthands
 
@@ -99,7 +99,7 @@ Returns the features as a geojson, as per the OS NGD API.
 An alternative means of returning OS NGD features for a search area which is GeometryCollection or a multi-geometry (MultiPoint, MultiLinestring, MultiPolygon). This will in some cases improve speed, performance, and prevent the call from timing out.
 
 **Parameters:**
-   - **wkt** (string or shapely geometry object, optional) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a string or as a Shapely geometry object. Multi-geometries and Geometry Collections may be supplied, and any hierarchical geometries will first be flattened into a list of single-geometry search areas. The function automatically composes the full INTERSECTS filter and adds it to the 'filter' query parameter. Make sure that 'filter-crs' is set to the appropriate value.
+   - **wkt** (string or shapely geometry object, optional) - A means of searching a geometry for features. The search area(s) must be supplied in well-known-text, either in a string or as a Shapely geometry object. Multi-geometries and Geometry Collections may be supplied, and any hierarchical geometries will first be flattened into a list of single-geometry search areas. The function automatically composes the full INTERSECTS filter and adds it to the `filter` query parameter. Make sure that `filter-crs` is set to the appropriate value.
    - **hierarchical_output** (bool, default False) - If True, then results are returned in a hierarchical structure of GeoJSONs according to search area (and collection if applicable). If False, results are returned as a single GeoJSON.
    - **\*\*kwargs**  - Other parameters passed to `catalyst_ngd_wrappers.items`, or the limit extension if applied.
 
@@ -115,7 +115,7 @@ NOTE: If a limit is supplied for the maximum number of features to be returned o
 **Parameters:**
    - **collection** (list of str) - A list of [OS NGD features collections](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/features#get-collections-collectionid-items) to call from.
    - **hierarchical_output** (bool, default False) - If True, then results are returned in a hierarchical structure of GeoJSONs according to collection (and search area if applicable). If False, results are returned as a single GeoJSON.
-   - **\**kwargs** - Other parameters passed to `catalyst_ngd_wrappers.items`, or the limit/geom extension if applied.
+   - **\**kwargs** - Other parameters passed to `catalyst_ngd_wrappers.items`, or the `limit`/`geom` extension if applied.
 
 ## Output Specifications
 - **Format**
@@ -126,11 +126,11 @@ NOTE: If a limit is supplied for the maximum number of features to be returned o
         - **timeStamp**: str (date-time) - Format "YYYY-MM-DDTHH:MM:SS.sssssssZ"
         - **numberReturned**: int
         - **features**: array of Feature (object)
-        - **links** - This is absent if either _limit_ extension is applied, or if _hierarchical-output=False_ (if this attribute applies).
+        - **links** - This is absent if either `limit` extension is applied, or if `hierarchical-output=False` (if this attribute applies).
         This is because in these cases the GeoJSON(s) comprising the response do not represent a single NGD feature request.
     - Additional Catalyst attributes
         - **numberOfReqeusts**: int - The number of NGD items requests from which the final response is compiled
-        - **numberOfRequestsByCollection**: dict[str: int] - The number of NGD items requests made, split by collection. Only included when _col_ extension applied and _hierarchical-output=False_.
+        - **numberOfRequestsByCollection**: dict[str: int] - The number of NGD items requests made, split by collection. Only included when `col` extension applied and `hierarchical-output=False`.
         - **numberReturnedByCollection**: dict[str: int] - The number of features returned, split by collection.
         - **telemetryData**: dict - Only applies for the base wrapper. Contains a record of the telemetry data which has been logged.
             - Method
@@ -143,11 +143,11 @@ NOTE: If a limit is supplied for the maximum number of features to be returned o
     - **id**: str (uuid) - OSID of the feature
     - **collection**: str - Collection the feature belongs to. This is an additional attribute supplied by catalyst
     - **geometry**: dict - List-like representation of the feature's geometry, and the geometry type
-    - **searchAreaNumber**: int | list - The number of the search area where the feature is found. If a feature intersects multiple search areas, the numbers are given in a list. Only inclded when _geom_ extension applied and _hierarchical-output=False_. 
+    - **searchAreaNumber**: int | list - The number of the search area where the feature is found. If a feature intersects multiple search areas, the numbers are given in a list. Only inclded when `geom` extension applied and `hierarchical-output=False`. 
     - **properties**: dict - Non-spatial attribution associated with the feature
         - OS NGD attribution for each theme, collection, and feature type [here](https://docs.os.uk/osngd/data-structure)
         - The collection name is added by catalyst
-        - When the _geom_ extension is applied, the searchAreaNumber value is also included
+        - When the `geom` extension is applied, the searchAreaNumber value is also included
     - **type**: str - object type ("Feature")
 - **Failed Response Format**
    Json object specifying error metadata.  As the wrapper mimics the behaviour of an API and is designed for [API deployment](https://github.com/Geovation/catalyst-ngd-wrappers-azure).
