@@ -280,6 +280,9 @@ def ngd_items_request(
         wkt (string or shapely geometry object) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a string or as a Shapely geometry object.
             The function automatically composes the full INTERSECTS filter and adds it to the 'filter' query parameter.
             Make sure that 'filter-crs' is set to the appropriate value.
+        authenticate (boolean, default True) - If True, the request is authenticated using OAuth2. This requires the CLIENT_ID and CLIENT_SECRET environment variables to be set.
+            If False, no authentication is used, and an API key must be supplied in either the headers or params.
+        log_request_details (boolean, default True) - If True, adds extra logging for the request details. This can be used for telemetry when deployed as an API.
         use_latest_collection (boolean, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. bld-fts-building[-2]), the latest version is used.
             Note that if use_latest_collection but 'collection' does specify a version, the specified version is always used regardless of use_latest_collection.
         headers (dict, optional) - Headers to pass to the query. These can include bearer-token authentication.
