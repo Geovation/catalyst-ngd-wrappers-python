@@ -33,6 +33,19 @@ This is a python package which extends and enhances the flexibility and function
 
 ## Documentation
 
+## Authentication
+
+Authentication is only required for the catalyst_ngd_wrappers.items function and its extensions. You will first need to create a project on the [OS DataHub](https://osdatahub.os.uk/projects), and ensure that OS NGD API - Features is added to the project. Then, authentication can be achieved in the following ways:
+
+- **API Key**
+    - Requests can be authenticated using all the [OS NGD API - Features authentication methods](https://docs.os.uk/os-apis/core-concepts/authentication) (keys and access tokens). The methods are:
+        - OAuth2 bearer token
+        - HTTP Header key
+        - HTTP Query Parameter key
+- **OAuth2 Environment Variables**
+    - If CLIENT_ID and CLIENT_SECRET are set as environment variables, the API handles OAuth2 authentication automatically, generating and reusing access tokens until they expire.
+    - CLIENT_ID should be set as the Project API Key value, and CLIENT_SECRET should be set as the Project API Secret value
+
 ### catalyst_ngd_wrappers.items
 
 ngd_items_request(collection: str, params: dict = None, headers: dict = None, use_latest_collection: bool = False, authenticate: bool = True, log_request_details: bool = True, wkt: str = None, filter_params: dict = None, **kwargs)
@@ -52,7 +65,7 @@ A wrapper for the [OS NGD API - Features](https://docs.os.uk/osngd/getting-start
    - **use_latest_collection** (boolean, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. bld-fts-building[-2]), the latest version is used. If 'collection' does specify a version, the specified version is always used regardless of use_latest_collection.
    - **authenticate** (boolean, default True) - If True, the request is authenticated using OAuth2. This requires the CLIENT_ID and CLIENT_SECRET environment variables to be set. If False, no authentication is used, and an API key must be supplied in either the headers or params.
    - **log_request_details**: bool, default True - If True, adds extra telemetry metadata to the request, which can be used for logging when deployed as an API.
-   - **\**kwargs** - Other parameters to be passed to the [request.Session.request get method](https://requests.readthedocs.io/en/latest/api/#requests.Session.request) eg. headers, timeout.
+   - **\*\*kwargs**  - Other parameters to be passed to the [request.Session.request get method](https://requests.readthedocs.io/en/latest/api/#requests.Session.request) eg. headers, timeout.
 
 ### limit extension
 
@@ -61,7 +74,7 @@ This extension serves to extend the maximum number of features returned above th
 **Parameters:**
    - **limit** (int, optional) - The maximum number of features to be returned by looping through multiple NGD requests. With the limit extension, this paramater must be supplied as a direct function parameter, rather than as a key-value pair in params.
    - **request_limit** (int, default 50) - An alternative means of limiting the response; by number of requests rather than features. Each OS NGD Feature request returns a maximum of 100 features.
-   - **\**kwargs** - Other parameters passed to `catalyst_ngd_wrappers.items`.
+   - **\*\*kwargs**  - Other parameters passed to `catalyst_ngd_wrappers.items`.
 
 **IMPORTANT**: When the limit extension is used alongside the geom and/or col extensions, the limit and request_limit constraints apply _per search area, per collection_. Consider [pricing](https://osdatahub.os.uk/plans).
 
@@ -76,7 +89,7 @@ An alternative means of returning OS NGD features for a search area which is Geo
 **Parameters:**
    - **wkt** (string or shapely geometry object, optional) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a string or as a Shapely geometry object. Multi-geometries and Geometry Collections may be supplied, and any hierarchical geometries will first be flattened into a list of single-geometry search areas. The function automatically composes the full INTERSECTS filter and adds it to the 'filter' query parameter. Make sure that 'filter-crs' is set to the appropriate value.
    - **hierarchical_output** (bool, default False) - If True, then results are returned in a hierarchical structure of GeoJSONs according to search area (and collection if applicable). If False, results are returned as a single GeoJSON.
-   - **\**kwargs** - Other parameters passed to `catalyst_ngd_wrappers.items`, or the limit extension if applied.
+   - **\*\*kwargs**  - Other parameters passed to `catalyst_ngd_wrappers.items`, or the limit extension if applied.
 
 Each component shape of the multi-geometry will be searched in turn. When a hierarchical multi-geometry is supplied (eg. a GeometryCollection containing MultiPolygons), it is flattened into a single set of its component single-geometry shapes.
 
