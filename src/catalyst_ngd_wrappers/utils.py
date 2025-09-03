@@ -26,7 +26,7 @@ def wkt_to_spatial_filter(wkt: str, predicate: str = 'INTERSECTS') -> str:
 def construct_filter_param(**params) -> str:
     '''Constructs a set of key=value parameters into a filter string for an API query'''
     for k, v in params.items():
-        if isinstance(str, v):
+        if isinstance(v, str):
             params[k] = f"'{v}'"
     filter_list = [f"({k}={v})" for k, v in params.items()]
     return 'and'.join(filter_list)
@@ -56,13 +56,17 @@ def prepare_parameters(
         query_params['filter'] = f'({current_filters})and{spatial_filter}' if current_filters else spatial_filter
 
     for attr, val in query_params.items():
+        if not isinstance(val, str):
+            val = str(val)
         if 'crs' not in attr:
+            query_params[attr] = val
             continue
         if val.isnumeric():
             authority_and_version = 'EPSG/0'
         elif val.startswith('CRS'):
             authority_and_version = 'OGC/1.3'
         else:
+            query_params[attr] = val
             continue
         query_params[attr] = f'http://www.opengis.net/def/crs/{authority_and_version}/{val}'
     return query_params
@@ -84,6 +88,21 @@ def multilevel_explode(shape: BaseGeometry) -> list[Polygon | LineString | Point
         result_list.extend(lower_shape_exploded)
     return result_list
 
+def construct_error_response(
+        message: str,
+        status_code: int = 400,
+        help_text: str = None,
+        error_source: str = 'Catalyst Wrapper'
+    ) -> dict:
+    '''Constructs a structured error response dictionary.'''
+    response = {
+        "code": status_code,
+        "description": message
+    }
+    if help_text:
+        response['help'] = help_text
+    response['errorSource'] = error_source
+    return response
 
 def handle_decode_error(error: JSONDecodeError, status_code: int = 500) -> dict:
     '''Handles JSONDecodeError exceptions by extracting the error message and returning a structured error response.'''
@@ -94,8 +113,8 @@ def handle_decode_error(error: JSONDecodeError, status_code: int = 500) -> dict:
             'Error Text': error_string,
             'Help (Catalyst)': 'This could be due to a request URI which is too long or an input geometry which is too complex.'
         }
-    return {
-        "code": status_code,
-        "description": error_string,
-        "errorSource": "OS NGD API"
-    }
+    return construct_error_response(
+        message = error_string,
+        status_code = status_code,
+        error_source = 'OS NGD API'
+    )

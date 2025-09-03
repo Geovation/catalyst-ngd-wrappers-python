@@ -22,8 +22,8 @@ import requests as r
 from shapely import from_wkt
 from shapely.errors import GEOSException
 
-from .utils import prepare_parameters, handle_decode_error, multilevel_explode
-from .telemetry import prepare_telemetry_custom_dimensions
+from utils import prepare_parameters, handle_decode_error, multilevel_explode, construct_error_response
+from telemetry import prepare_telemetry_custom_dimensions
 
 UNIVERSAL_TIMEOUT: int = 20
 RETRIES: int = 3
@@ -124,13 +124,11 @@ def get_specific_latest_collections(collection: list[str], **kwargs) -> str:
         specific_latest_collections = {
             col: latest_collections[col] for col in collection}
     except KeyError as e:
-        return {
-            'code': 404,
-            'description': f'Collection {e} is not a supported Collection base name. The name must not include a version suffix. Please refer to the documentation for a list of supported Collections.',
-            'help': 'https://api.os.uk/features/ngd/ofa/v1/collections',
-            'errorSource': 'Catalyst Wrapper'
-        }
-
+        return construct_error_response(
+            status_code = 404,
+            message = f'Collection {e} is not a supported Collection base name. The name must not include a version suffix. Please refer to the documentation for a list of supported Collections.',
+            help_text = 'https://api.os.uk/features/ngd/ofa/v1/collections'
+        )
     return specific_latest_collections
 
 
@@ -228,11 +226,10 @@ def oauth2_authentication(func: callable) -> callable:
                 client_secret=client_secret
             )
         except PermissionError:
-            return {
-                'code': 401,
-                'description': 'Missing or invalid CLIENT_ID and/or CLIENT_SECRET. Make sure these are configured correctely in your environment variables.',
-                'errorSource': 'Catalyst Wrapper'
-            }
+            return construct_error_response(
+                status_code = 401,
+                message = 'Missing or invalid CLIENT_ID and/or CLIENT_SECRET. Make sure these are configured correctely in your environment variables.'
+            )
         os.environ['ACCESS_TOKEN'] = access_token
         headers['Authorization'] = f'Bearer {access_token}'
         return run_request(headers)
@@ -272,22 +269,24 @@ def ngd_items_request(
 ) -> dict:
     '''
     Calls items from the OS NGD API - Features
-        - https://osdatahub.os.uk/docs/wfs/overview
+        - https://www.ordnancesurvey.co.uk/products/os-ngd-api-features
         - https://docs.os.uk/osngd/accessing-os-ngd/access-the-os-ngd-api/os-ngd-api-features
     Parameters:
-        collection (str) - the feature collection to call from. Feature collection names and details can be found at https://api.os.uk/features/ngd/ofa/v1/collections/
-        params (dict, optional) - parameters to pass to the query as query parameters, supplied in a dictionary. Supported parameters are: bbox, bbox-crs, crs, datetime, filter, filter-crs, filter-lang, limit, offset
+        collection (str) - The feature collection to call from. Feature collection names and details can be found at https://api.os.uk/features/ngd/ofa/v1/collections/
+        params (dict, optional) - Parameters to pass to the API request as query parameters, supplied in a dictionary. Supported parameters are: bbox, bbox-crs, crs, datetime, filter, filter-crs, filter-lang, limit, offset. Find details of these API parameters on the OS technical docs: https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/features#get-collections-collectionid-items.
         filter_params (dict, optional) - OS NGD attribute filters to pass to the query within the 'filter' query_param. The can be used instead of or in addition to manually setting the filter in params.
             The key-value pairs will appended using the EQUAL TO [ = ] comparator. Any other CQL Operator comparisons must be set manually in params.
             Queryable attributes can be found in OS NGD codelists documentation https://docs.os.uk/osngd/code-lists/code-lists-overview, or by inserting the relevant collectionId into the https://api.os.uk/features/ngd/ofa/v1/collections/{{collectionId}}/queryables endpoint.
         wkt (string or shapely geometry object) - A means of searching a geometry for features. The search area(s) must be supplied in wkt, either in a string or as a Shapely geometry object.
             The function automatically composes the full INTERSECTS filter and adds it to the 'filter' query parameter.
             Make sure that 'filter-crs' is set to the appropriate value.
+        authenticate (boolean, default True) - If True, the request is authenticated using OAuth2. This requires the CLIENT_ID and CLIENT_SECRET environment variables to be set.
+            If False, no authentication is used, and an API key must be supplied in either the headers or params.
+        log_request_details (boolean, default True) - If True, adds extra logging for the request details. This can be used for telemetry when deployed as an API.
         use_latest_collection (boolean, default False) - If True, it ensures that if a specific version of a collection is not supplied (eg. bld-fts-building[-2]), the latest version is used.
             Note that if use_latest_collection but 'collection' does specify a version, the specified version is always used regardless of use_latest_collection.
         headers (dict, optional) - Headers to pass to the query. These can include bearer-token authentication.
-        access_token (str) - An access token, which will be added as bearer token to the headers.
-        **kwargs: other generic parameters to be passed to the requests.get()
+        **kwargs - other parameters to be passed to the request.Session.request get method eg. headers, timeout.
 
     Returns the features as a geojson, as per the OS NGD API.
     '''
@@ -370,12 +369,15 @@ def limit_extension(func: callable) -> callable:
 
         params = params.copy() if params else {}
 
+        if 'limit' in params:
+            return construct_error_response(
+                message = "With this Catalyst wrapper, the limit must be supplied as a function parameter and not as a key-value pair in params.",
+            )
+
         if 'offset' in params:
-            return {
-                'code': 400,
-                'description': "'offset' is not a valid attribute for functions using this Catalyst wrapper.",
-                'errorSource': 'Catalyst Wrapper'
-            }
+            return construct_error_response(
+                message = "'offset' is not a valid attribute for functions using this Catalyst wrapper.",
+            )
 
         features = []
 
@@ -385,11 +387,9 @@ def limit_extension(func: callable) -> callable:
         offset = 0
 
         if not limit and not request_limit:
-            return {
-                'code': 400,
-                'description': 'At least one of limit or request_limit must be provided to prevent indefinitely numerous requests and high costs.',
-                'errorSource': 'Catalyst Wrapper'
-            }
+            return construct_error_response(
+                message = 'At least one of limit or request_limit must be provided to prevent indefinitely numerous requests and high costs.'
+            )
 
         while (request_count != request_limit) and (not (limit) or offset < limit):
 
@@ -502,12 +502,10 @@ def multigeometry_search_extension(func: callable) -> callable:
         try:
             full_geom = from_wkt(wkt) if isinstance(wkt, str) else wkt
         except GEOSException:
-            return {
-                'code': 400,
-                'description': 'The input geometry is not valid. Please ensure you have the correct formatting for your input geometry type.',
-                'help': 'http://libgeos.org/specifications/wkt/',
-                'errorSource': 'Catalyst Wrapper'
-            }
+            return construct_error_response(
+                message = 'The input geometry is not valid. Please ensure you have the correct formatting for your input geometry type.',
+                help = 'http://libgeos.org/specifications/wkt/',
+            )
 
         search_areas = []
         partial_geoms = multilevel_explode(full_geom)
