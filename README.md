@@ -159,6 +159,8 @@ NOTE: If a limit is supplied for the maximum number of features to be returned o
 
 ### `col` Extension
 
+A means of searching for multiple NGD feature collections, rather than just one.
+
 **Parameters:**
    - **`collection`** (list of str) - A list of [OS NGD features collections](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features/technical-specification/features#get-collections-collectionid-items) to call from.
    - **`hierarchical_output`** (bool, default False) - If True, then results are returned in a hierarchical structure of GeoJSONs according to collection (and search area if applicable). If False, results are returned as a single GeoJSON.
