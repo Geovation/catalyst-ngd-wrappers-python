@@ -2,6 +2,14 @@
 
 This is a python package which extends and enhances the flexibility and functionality of Ordnance Survey NGD API - Features.
 
+## Installation
+
+The library can be installed using `pip`. It is not currently published to a repository such as PyPI but it can be installed by direct link to the latest version tag on GitHub.
+
+```console
+$ pip install https://github.com/Geovation/catalyst-ngd-wrappers-python/archive/refs/heads/main.zip
+```
+
 ## Features and Capabilies Provided by the Wrappers
 
 1. Wrapping core [OS NGD API - Features](https://docs.os.uk/osngd/getting-started/access-the-os-ngd-api/os-ngd-api-features) functionality
@@ -193,16 +201,6 @@ NOTE: If a limit is supplied for the maximum number of features to be returned o
    - **help**: str - Where appropriate, a link to relevant documentation.
    - **errorSource**: str - either 'OS NGD API' or 'Catalyst Wrapper', specifying whether the error arose within the NGD API or in the wrapper code.
 
-## Install
-
-The library can be installed using `pip`. It is not currently published to a repository such as PyPI but it can be installed by direct link to the latest version tag on GitHub.
-
-```console
-$ pip install git+https://github.com/Geovation/catalyst-ngd-wrappers-python@0.2.0
-```
-
-Replace the version tag with the latest version. To upgrade, reinstall with the latest tag (or whichever tag you choose).
-
 ## Usage
 
 ### Latest Collections Wrapper
@@ -232,13 +230,13 @@ os.environ['CLIENT_SECRET'] = '<YOUR_PROJECT_API_SECRET>'
 # Returns a hierarchical set of geojsons containing OS data for for latest versions of selected collections, for the set of search areas provided'
 data = items_limit_geom_col(
     collection = collection,
+    limit = limit,
     wkt = wkt,
     use_latest_collection = True,
     hierarchical_output = True
     query_params = {
         'wkt': universal_crs,
-        'filter-crs': universal_crs,
-        'limit': limit,
+        'filter-crs': universal_crs
     }
 )
 ```
