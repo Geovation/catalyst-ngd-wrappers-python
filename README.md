@@ -166,6 +166,19 @@ A means of searching for multiple NGD feature collections, rather than just one.
    - **`hierarchical_output`** (bool, default False) - If True, then results are returned in a hierarchical structure of GeoJSONs according to collection (and search area if applicable). If False, results are returned as a single GeoJSON.
    - **`**kwargs`** - Other parameters passed to `catalyst_ngd_wrappers.items`, or the `limit`/`geom` extension if applied.
 
+### List of Functions
+
+By combining extensions to the `items` function, the following list of functions are available:
+
+- `items`
+- `items_limit`
+- `items_geom`
+- `items_col`
+- `items_limit_geom`
+- `items_limit_col`
+- `items_geom_col`
+- `items_limit_geom_col`
+
 ### Output Specifications
 - **Format**: A GeoJSON by default. If the `hierarchical-output=True`, a hierarchical dictionary containing separate GeoJSONs according to collection and/or search area number. For failed requests, see 'Failed request response format' below.
 - **Response Metadata**:
