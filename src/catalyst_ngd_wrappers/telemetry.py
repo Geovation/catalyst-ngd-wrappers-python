@@ -4,7 +4,7 @@ Prepares telemetry data for logging requests made to the OS NGD API - Features e
 
 import os
 
-from utils import flatten_coords
+from .utils import flatten_coords
 
 QUERY_PARAM_TELEMETRY_LENGTH_LIMIT: int = int(
     os.environ.get('QUERY_PARAM_TELEMETRY_LENGTH_LIMIT', '200'))

@@ -2,7 +2,7 @@ import os
 from unittest import TestCase
 import requests as r
 
-from ngd_api_wrappers import items
+from .ngd_api_wrappers import items
 
 WKT = """
 GEOMETRYCOLLECTION(
