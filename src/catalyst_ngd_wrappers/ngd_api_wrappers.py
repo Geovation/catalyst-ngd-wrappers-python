@@ -1,4 +1,5 @@
-'''Central module
+'''
+Central module
 Wrappers for the OS NGD API - Features, allowing for simplified access to the API endpoints.
 It includes:
     - Handling of authentication via OAuth2,
