@@ -22,8 +22,8 @@ import requests as r
 from shapely import from_wkt
 from shapely.errors import GEOSException
 
-from utils import prepare_parameters, handle_decode_error, multilevel_explode, construct_error_response
-from telemetry import prepare_telemetry_custom_dimensions
+from .utils import prepare_parameters, handle_decode_error, multilevel_explode, construct_error_response
+from .telemetry import prepare_telemetry_custom_dimensions
 
 UNIVERSAL_TIMEOUT: int = 20
 RETRIES: int = 3
